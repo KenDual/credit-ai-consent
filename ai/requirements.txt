@@ -1,0 +1,14 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic==2.11.7
+numpy==2.2.6
+pandas==2.3.1
+scikit-learn==1.7.1
+lightgbm==4.6.0
+shap==0.48.0
+faiss-cpu==1.11.0.post1
+sentence-transformers==5.1.0
+joblib==1.5.2
+transformers==4.55.4
+# Torch: nếu không cần GPU, dùng bản này (đã cài OK):
+torch==2.8.0
