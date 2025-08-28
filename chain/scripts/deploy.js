@@ -1,15 +1,16 @@
-// chain/scripts/deploy.js
-const hre = require("hardhat");
+// scripts/deploy.js
+import { network } from "hardhat";
 
 async function main() {
-    const ConsentRegistry = await hre.ethers.getContractFactory("ConsentRegistry");
-    const consent = await ConsentRegistry.deploy();
-    await consent.waitForDeployment();
-    const addr = await consent.getAddress();
-    console.log("ConsentRegistry deployed to:", addr);
+    // Kết nối network được truyền bằng --network (ở đây là localhost)
+    const { viem } = await network.connect();
+
+    // Deploy contract
+    const consent = await viem.deployContract("ConsentRegistry");
+    console.log("ConsentRegistry deployed at:", consent.address);
 }
 
 main().catch((err) => {
     console.error(err);
-    process.exit(1);
+    process.exitCode = 1;
 });

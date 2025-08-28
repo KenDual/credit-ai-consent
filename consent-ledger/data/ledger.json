@@ -1,0 +1,41 @@
+{
+  "blocks": [
+    {
+      "index": 0,
+      "timestamp": "2025-08-28T16:19:48.666Z",
+      "type": "GENESIS",
+      "payload": {},
+      "subjectPubKey": "",
+      "signature": "",
+      "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "index": 1,
+      "timestamp": "2025-08-28T16:22:11.840Z",
+      "type": "GIVE",
+      "payload": {
+        "consentId": "682405e6b1216b8585b6d113da969d34d140ce16e1b0f599bd1755874cf05fc4",
+        "scopes": "sms,ecom,web",
+        "expiry": 1756401731,
+        "dataHash": "demoHash"
+      },
+      "subjectPubKey": "02d0daf6310ecfef80897ad58ee622bb7356e5a44ac1f286f7bb033d7135872ee2",
+      "signature": "52e6d9a5a299962311b90c16b03de6cc5f75004e184e4017f9e1b817569db01b6c337fb6c1638034fda231d9f29c9154fbd1759033c40a0c0325f24d0c00e9cd",
+      "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "hash": "4e163bc4bab9210ae8872b8c30d9f8f61c9afdcb5c32814efcc1d332e41e8218"
+    },
+    {
+      "index": 2,
+      "timestamp": "2025-08-28T16:22:11.872Z",
+      "type": "REVOKE",
+      "payload": {
+        "consentId": "682405e6b1216b8585b6d113da969d34d140ce16e1b0f599bd1755874cf05fc4"
+      },
+      "subjectPubKey": "02d0daf6310ecfef80897ad58ee622bb7356e5a44ac1f286f7bb033d7135872ee2",
+      "signature": "578e5f1bc9ca0684bc3775dc54882a48912854f4fb00df8a01bb471cb0ea4fee1b9b02c08a987d5348b7209025c24c3d96e850f507a4577827fa21a5688b4ef0",
+      "prevHash": "4e163bc4bab9210ae8872b8c30d9f8f61c9afdcb5c32814efcc1d332e41e8218",
+      "hash": "3969a47287ed2054600069ad94cbfb57c70270b8291511496f9bfb58e2ab60f3"
+    }
+  ]
+}
