@@ -1,10 +1,6 @@
 {
-  "id_col": "user_id",
-  "target_col": "default_90d",
-  "aux_targets": [
-    "pd_true"
-  ],
-  "features": [
+  "names": [
+    "pd_true",
     "age",
     "monthly_income_vnd",
     "emp_contract",
@@ -67,5 +63,8 @@
     "email_type_transaction_ratio",
     "email_type_unknown_ratio",
     "email_type_utility_ratio"
-  ]
+  ],
+  "target": "default_90d",
+  "id_col": "user_id",
+  "created_at": "2025-08-29T19:12:02.974073Z"
 }
