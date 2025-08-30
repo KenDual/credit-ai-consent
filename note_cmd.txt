@@ -5,6 +5,14 @@ py -3.11 -m venv .venv
 # Nếu bị chặn script, chạy 1 lần:
 # Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 .\.venv\Scripts\Activate.ps1
-.\.venv\Scripts\Activate
+
 python -m pip install --upgrade pip setuptools wheel
 pip install fastapi uvicorn[standard] pydantic==2.* numpy pandas scikit-learn lightgbm shap faiss-cpu sentence-transformers joblib
+
+consent-ledger:
+npm star
+npm run demo
+
+AI:
+.\.venv\Scripts\Activate
+uvicorn service.app:app --host 127.0.0.1 --port 8001 --reload

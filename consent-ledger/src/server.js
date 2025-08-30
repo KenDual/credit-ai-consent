@@ -2,6 +2,7 @@ import express from "express";
 import { Ledger } from "./ledger.js";
 import { newPrivateKeyHex, getPublicKeyHex, messageHashHex } from "./crypto.js";
 
+const INSECURE = process.env.INSECURE_LEDGER === "1";
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 
@@ -19,11 +20,21 @@ app.post("/wallets/new", (_req, res) => {
 app.post("/consents/give", async (req, res) => {
     try {
         const { scopes, expiry, dataHash, subjectPubKey, signature } = req.body || {};
-        if (!scopes || !expiry || !dataHash || !subjectPubKey || !signature)
+        if (!scopes || !expiry || !dataHash) {
             return res.status(400).json({ error: "Missing fields" });
+        }
+        if (!INSECURE && (!subjectPubKey || !signature)) {
+            return res.status(400).json({ error: "Missing signature/pubKey" });
+        }
 
         const ledger = await Ledger.load();
-        const out = await ledger.addGive({ scopes, expiry, dataHash, subjectPubKey, signature });
+        const out = await ledger.addGive({
+            scopes,
+            expiry,
+            dataHash,
+            subjectPubKey: subjectPubKey || "demo",
+            signature: signature || "demo"
+        });
         const chainCheck = ledger.verifyChain();
         res.json({ ok: true, ...out, chainCheck });
     } catch (e) {
@@ -31,15 +42,24 @@ app.post("/consents/give", async (req, res) => {
     }
 });
 
+
 // Thu hồi consent (REVOKE)
 app.post("/consents/revoke", async (req, res) => {
     try {
         const { consentId, subjectPubKey, signature } = req.body || {};
-        if (!consentId || !subjectPubKey || !signature)
+        if (!consentId) {
             return res.status(400).json({ error: "Missing fields" });
+        }
+        if (!INSECURE && (!subjectPubKey || !signature)) {
+            return res.status(400).json({ error: "Missing signature/pubKey" });
+        }
 
         const ledger = await Ledger.load();
-        const out = await ledger.addRevoke({ consentId, subjectPubKey, signature });
+        const out = await ledger.addRevoke({
+            consentId,
+            subjectPubKey: subjectPubKey || "demo",
+            signature: signature || "demo"
+        });
         const chainCheck = ledger.verifyChain();
         res.json({ ok: true, ...out, chainCheck });
     } catch (e) {

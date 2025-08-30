@@ -1,11 +1,14 @@
 package com.demo.credit.controller;
 
 import com.demo.credit.controller.dto.FeatureRequest;
+import com.demo.credit.service.ConsentPort;
 import com.demo.credit.service.ModelClient;
 import com.demo.credit.service.dto.ScoreResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,24 +19,38 @@ import java.util.Map;
 public class ScoringController {
 
     private final ModelClient modelClient;
+    private final ConsentPort  consent;
 
-    public ScoringController(ModelClient modelClient) {
+    public ScoringController(ModelClient modelClient, ConsentPort consent) {
         this.modelClient = modelClient;
+        this.consent = consent;
     }
 
-    /** 1) Lấy danh sách feature từ AI service (để build form/UI) */
+    /** 1) Lấy danh sách feature từ AI service (dùng build form/UI) */
     @GetMapping("/model/schema")
     public Map<String, Object> schema() {
         var feats = modelClient.getFeatureSchema();
-        var out = new HashMap<String, Object>();
+        Map<String, Object> out = new HashMap<>();
         out.put("count", feats.size());
         out.put("features", feats);
         return out;
     }
 
-    /** 2) Demo GET: mock features tối thiểu rồi gọi model */
+    /** 2) Demo GET: mock features -> (check/auto-grant consent) -> gọi model */
     @GetMapping("/demo/score")
-    public Map<String, Object> demoScore(@RequestParam(defaultValue = "demo001") String userId) {
+    public Map<String, Object> demoScore(
+            @RequestParam(defaultValue = "demo001") String userId,
+            @RequestParam(defaultValue = "credit_scoring") String purpose) {
+
+        try {
+            if (!consent.hasConsent(userId, purpose)) {
+                consent.grantConsent(userId, purpose, 7L * 24 * 3600);
+            }
+        } catch (Exception e) {
+            // Demo: nếu chain lỗi vẫn cho đi tiếp, chỉ log cảnh báo
+            System.err.println("consent check/grant failed: " + e.getMessage());
+        }
+
         Map<String, Object> f = new HashMap<>();
         f.put("sms_count", 120);
         f.put("contacts_count", 180);
@@ -57,9 +74,33 @@ public class ScoringController {
         return out;
     }
 
-    /** 3) POST: nhận features từ client để chấm điểm */
+    /** 3) POST: nhận features -> (check consent, optional autoGrant) -> gọi model */
     @PostMapping(value = "/score", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ScoreResponse score(@RequestBody FeatureRequest req) {
+    public ScoreResponse score(
+            @RequestBody FeatureRequest req,
+            @RequestParam(defaultValue = "credit_scoring") String purpose,
+            @RequestParam(defaultValue = "false") boolean autoGrant) {
+
+        String uid = (req.userId != null && !req.userId.isBlank()) ? req.userId : "anon";
+
+        try {
+            boolean ok = consent.hasConsent(uid, purpose);
+            if (!ok) {
+                if (autoGrant) {
+                    // Cho demo: tự động grant nếu cho phép qua query param
+                    consent.grantConsent(uid, purpose, 7L * 24 * 3600);
+                } else {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Consent required");
+                }
+            }
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            // Lỗi khi gọi chain
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY, "consent check failed: " + e.getMessage(), e);
+        }
+
         return modelClient.score(req.features);
     }
 }
