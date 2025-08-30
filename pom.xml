@@ -49,13 +49,6 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
-		<!-- Web3j -->
-		<dependency>
-			<groupId>org.web3j</groupId>
-			<artifactId>core</artifactId>
-			<version>4.10.3</version>
-		</dependency>
-
 		<!-- Lombok (compile-time only) -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>

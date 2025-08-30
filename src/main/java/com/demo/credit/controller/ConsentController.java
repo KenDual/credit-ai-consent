@@ -1,58 +1,51 @@
 package com.demo.credit.controller;
 
 import com.demo.credit.controller.dto.ConsentDtos.*;
-import com.demo.credit.service.ConsentService;
-import org.springframework.http.HttpStatus;
+import com.demo.credit.service.ConsentPort;
+import com.demo.credit.service.HashUtil;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Instant;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/consent")
+@RequestMapping("/api")
 public class ConsentController {
 
-    private final ConsentService consent;
+    private final ConsentPort consent;
 
-    public ConsentController(ConsentService consent) { this.consent = consent; }
+    public ConsentController(ConsentPort consent) { this.consent = consent; }
 
-    @GetMapping("/status")
-    public StatusRes status(@RequestParam String userId,
-                            @RequestParam(defaultValue = "credit_scoring") String purpose) {
-        try {
-            boolean ok = consent.hasConsent(userId, purpose);
-            return new StatusRes(userId, purpose, ok);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "chain call failed: " + e.getMessage(), e);
-        }
+    // Borrower cấp consent -> trả về consentId để gắn vào hồ sơ/app
+    @PostMapping("/consents/give")
+    public GiveResponse give(@RequestBody Map<String, Object> body) {
+        String scopes = (String) body.getOrDefault("scopes", "sms,ecom,web,email");
+        long   expiry = ((Number) body.getOrDefault("expiry", Instant.now().getEpochSecond() + 7L*24*3600)).longValue();
+        String dataHash = (String) body.getOrDefault("dataHash", HashUtil.consentId("anon","credit_scoring"));
+        String pub = (String) body.getOrDefault("subjectPubKey", null);
+        String sig = (String) body.getOrDefault("signature", null);
+
+        GiveRequest req = new GiveRequest();
+        req.scopes = scopes; req.expiry = expiry; req.dataHash = dataHash; req.subjectPubKey = pub; req.signature = sig;
+        return consent.give(req);
     }
 
-    @PostMapping("/grant")
-    public TxRes grant(@RequestBody GrantReq req) {
-        if (req.userId == null || req.purpose == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId & purpose are required");
-        }
-        long ttl = (req.ttlSec != null ? req.ttlSec : 7L*24*3600);
-        try {
-            String tx = consent.recordConsent(req.userId, req.purpose, ttl);
-            return new TxRes(tx);
-        } catch (IllegalStateException ise) {
-            throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, ise.getMessage(), ise);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "grant failed: " + e.getMessage(), e);
-        }
+    @PostMapping("/consents/{consentId}/revoke")
+    public RevokeResponse revoke(@PathVariable String consentId, @RequestBody(required = false) Map<String, String> b) {
+        RevokeRequest req = new RevokeRequest();
+        req.consentId = consentId;
+        req.subjectPubKey = b != null ? b.get("subjectPubKey") : null;
+        req.signature = b != null ? b.get("signature") : null;
+        return consent.revoke(req);
     }
 
-    @PostMapping("/revoke")
-    public TxRes revoke(@RequestBody RevokeReq req) {
-        if (req.userId == null || req.purpose == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId & purpose are required");
-        }
-        try {
-            String tx = consent.revokeConsent(req.userId, req.purpose);
-            return new TxRes(tx);
-        } catch (IllegalStateException ise) {
-            throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, ise.getMessage(), ise);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "revoke failed: " + e.getMessage(), e);
-        }
+    @GetMapping("/consents/{consentId}/status")
+    public StatusResponse status(@PathVariable String consentId) {
+        return consent.status(consentId);
+    }
+
+    @GetMapping("/consents/{consentId}/proof")
+    public ProofResponse proof(@PathVariable String consentId) {
+        return consent.proof(consentId);
     }
 }

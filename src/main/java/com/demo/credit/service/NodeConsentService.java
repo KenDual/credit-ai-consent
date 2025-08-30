@@ -1,13 +1,10 @@
 package com.demo.credit.service;
 
+import com.demo.credit.controller.dto.ConsentDtos.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class NodeConsentService implements ConsentPort {
@@ -21,51 +18,30 @@ public class NodeConsentService implements ConsentPort {
     }
 
     @Override
-    public boolean hasConsent(String userId, String purpose) {
-        String id = HashUtil.consentId(userId, purpose);
-        String url = String.format("%s/consents/%s/status", base, id);
-        Map<?,?> res = rest.getForObject(url, Map.class);
-        // server.statusOf(id) nên trả { id, active: true/false, ... }
-        Object active = (res != null) ? res.get("active") : null;
-        return (active instanceof Boolean) ? (Boolean) active : false;
+    public GiveResponse give(GiveRequest req) {
+        HttpHeaders h = new HttpHeaders();
+        h.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<GiveResponse> r = rest.postForEntity(base + "/consents/give",
+                new HttpEntity<>(req, h), GiveResponse.class);
+        return r.getBody();
     }
 
     @Override
-    public String grantConsent(String userId, String purpose, long ttlSec) {
-        String id = HashUtil.consentId(userId, purpose);
-        String url = base + "/consents/give";
-
-        long expiry = Instant.now().getEpochSecond() + ttlSec;
-        Map<String, Object> body = new HashMap<>();
-        body.put("scopes", java.util.List.of(purpose));
-        body.put("expiry", expiry);
-        body.put("dataHash", id);
-
-        // MVP insecure mode: backend sẽ bỏ qua signature/pubKey nếu bật INSECURE_LEDGER=1
-        body.put("subjectPubKey", "demo");
-        body.put("signature", "demo");
-
-        HttpHeaders h = new HttpHeaders(); h.setContentType(MediaType.APPLICATION_JSON);
-        ResponseEntity<Map> resp = rest.postForEntity(url, new HttpEntity<>(body, h), Map.class);
-        Map<?,?> m = resp.getBody();
-        // server trả { ok: true, id: "...", ... } -> ta trả lại id
-        Object createdId = (m != null) ? m.get("id") : null;
-        return (createdId != null) ? createdId.toString() : id;
+    public RevokeResponse revoke(RevokeRequest req) {
+        HttpHeaders h = new HttpHeaders();
+        h.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<RevokeResponse> r = rest.postForEntity(base + "/consents/revoke",
+                new HttpEntity<>(req, h), RevokeResponse.class);
+        return r.getBody();
     }
 
     @Override
-    public String revokeConsent(String userId, String purpose) {
-        String id = HashUtil.consentId(userId, purpose);
-        String url = base + "/consents/revoke";
+    public StatusResponse status(String consentId) {
+        return rest.getForObject(base + "/consents/{id}/status", StatusResponse.class, consentId);
+    }
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("consentId", id);
-        body.put("subjectPubKey", "demo");
-        body.put("signature", "demo");
-
-        HttpHeaders h = new HttpHeaders(); h.setContentType(MediaType.APPLICATION_JSON);
-        ResponseEntity<Map> resp = rest.postForEntity(url, new HttpEntity<>(body, h), Map.class);
-        Map<?,?> m = resp.getBody();
-        return (m != null && m.get("ok") instanceof Boolean && (Boolean)m.get("ok")) ? "ok" : "failed";
+    @Override
+    public ProofResponse proof(String consentId) {
+        return rest.getForObject(base + "/consents/{id}/proof",  ProofResponse.class,  consentId);
     }
 }

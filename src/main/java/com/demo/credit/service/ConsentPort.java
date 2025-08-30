@@ -1,7 +1,10 @@
 package com.demo.credit.service;
 
+import com.demo.credit.controller.dto.ConsentDtos.*;
+
 public interface ConsentPort {
-    boolean hasConsent(String userId, String purpose) throws Exception;
-    String  grantConsent(String userId, String purpose, long ttlSec) throws Exception;
-    String  revokeConsent(String userId, String purpose) throws Exception;
+    GiveResponse   give(GiveRequest req);
+    RevokeResponse revoke(RevokeRequest req);
+    StatusResponse status(String consentId);
+    ProofResponse  proof(String consentId);
 }

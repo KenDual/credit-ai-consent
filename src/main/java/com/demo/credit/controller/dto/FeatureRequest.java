@@ -4,7 +4,8 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 public class FeatureRequest {
-    public String userId;                 // tuỳ chọn: để log/ghi consent sau này
+    public String userId;  // optional
+    public String consentId;
     @NotNull
     public Map<String, Object> features;
 }
