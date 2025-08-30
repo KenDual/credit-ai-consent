@@ -1,39 +1,65 @@
 package com.demo.credit.controller;
 
-import com.demo.credit.service.ConsentService;
+import com.demo.credit.controller.dto.FeatureRequest;
 import com.demo.credit.service.ModelClient;
-import org.springframework.stereotype.Controller;
+import com.demo.credit.service.dto.ScoreResponse;
+import org.springframework.http.MediaType;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.ui.Model;
+
+import java.util.HashMap;
 import java.util.Map;
 
-@Controller
-@RequestMapping("/score")
+@RestController
+@RequestMapping("/api")
+@Validated
 public class ScoringController {
-    private final ConsentService consent;
-    private final ModelClient model;
 
-    public ScoringController(ConsentService consent, ModelClient model) {
-        this.consent = consent;
-        this.model = model;
+    private final ModelClient modelClient;
+
+    public ScoringController(ModelClient modelClient) {
+        this.modelClient = modelClient;
     }
 
-    @PostMapping("/{appId}")
-    public String score(@PathVariable int appId,
-                        @RequestParam String consentId,
-                        @RequestBody Map<String,Object> rawPayload,
-                        Model m) throws Exception {
-        if (!consent.isActive(consentId)) {
-            m.addAttribute("error", "Consent chưa hợp lệ/đã thu hồi");
-            return "error";
-        }
-        var req = Map.of(
-            "app_id", appId,
-            "raw", rawPayload.get("raw"),
-            "loan", rawPayload.getOrDefault("loan", Map.of("amount", 10000000, "tenor", 12))
-        );
-        var result = model.score(req);
-        m.addAttribute("result", result);
-        return "result"; // thymeleaf template
+    /** 1) Lấy danh sách feature từ AI service (để build form/UI) */
+    @GetMapping("/model/schema")
+    public Map<String, Object> schema() {
+        var feats = modelClient.getFeatureSchema();
+        var out = new HashMap<String, Object>();
+        out.put("count", feats.size());
+        out.put("features", feats);
+        return out;
+    }
+
+    /** 2) Demo GET: mock features tối thiểu rồi gọi model */
+    @GetMapping("/demo/score")
+    public Map<String, Object> demoScore(@RequestParam(defaultValue = "demo001") String userId) {
+        Map<String, Object> f = new HashMap<>();
+        f.put("sms_count", 120);
+        f.put("contacts_count", 180);
+        f.put("email_overdue_ratio", 0.05);
+        f.put("sms_fin_ratio", 0.2);
+        f.put("ecom_cat_fashion_ratio", 0.1);
+        f.put("social_posts_sum", 30);
+        f.put("social_likes_sum", 200);
+        f.put("emp_formal", 1);
+        f.put("region_HCM", 1);
+        f.put("monthly_income_vnd", 15_000_000);
+
+        ScoreResponse r = modelClient.score(f);
+        Map<String, Object> out = new HashMap<>();
+        out.put("userId", userId);
+        out.put("pd", r.getPd());
+        out.put("score", r.getScore());
+        out.put("decision", r.getDecision());
+        out.put("threshold", r.getThreshold());
+        out.put("topFeatures", r.getShapTopK());
+        return out;
+    }
+
+    /** 3) POST: nhận features từ client để chấm điểm */
+    @PostMapping(value = "/score", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ScoreResponse score(@RequestBody FeatureRequest req) {
+        return modelClient.score(req.features);
     }
 }
