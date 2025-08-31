@@ -118,15 +118,44 @@ public class ApplicationController {
         return res;
     }
 
-    /** Thu hồi consent của hồ sơ */
     @PostMapping("/{appId}/revoke")
     public ConsentDtos.RevokeResponse revoke(@PathVariable String appId) {
         return apps.revoke(appId);
     }
 
-    /** Proof consent từ ledger cho hồ sơ */
     @GetMapping("/{appId}/proof")
     public ConsentDtos.ProofResponse proof(@PathVariable String appId) {
         return apps.proof(appId);
+    }
+
+    @GetMapping
+    public com.demo.credit.controller.dto.ApplicationDtos.AppListResponse list(
+            @RequestParam(required = false) String decision,
+            @RequestParam(defaultValue = "all") String consent,
+            @RequestParam(name = "q", required = false) String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort
+    ) {
+        var paged = apps.search(decision, consent, query, page, size, sort);
+
+        var items = paged.items.stream().map(a -> {
+            var s = new com.demo.credit.controller.dto.ApplicationDtos.AppSummary();
+            s.appId = a.appId;
+            s.userId = a.userId;
+            s.consentActive = a.consentActive;
+            s.decision = a.decision;
+            s.score = a.score;
+            s.updatedAt = a.updatedAt;
+            return s;
+        }).collect(java.util.stream.Collectors.toList());
+
+        var res = new com.demo.credit.controller.dto.ApplicationDtos.AppListResponse();
+        res.page = paged.page;
+        res.size = paged.size;
+        res.total = paged.total;
+        res.totalPages = paged.totalPages;
+        res.items = items;
+        return res;
     }
 }

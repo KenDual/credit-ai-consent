@@ -1,7 +1,5 @@
 py -3.13 -m venv .venv
 
-cd ai
-py -3.11 -m venv .venv
 # Nếu bị chặn script, chạy 1 lần:
 # Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 .\.venv\Scripts\Activate.ps1
@@ -10,9 +8,47 @@ python -m pip install --upgrade pip setuptools wheel
 pip install fastapi uvicorn[standard] pydantic==2.* numpy pandas scikit-learn lightgbm shap faiss-cpu sentence-transformers joblib
 
 consent-ledger:
-npm star
+npm start
 npm run demo
 
 AI:
+py -3 -m venv .venv                 # hoặc: python -m venv .venv
 .\.venv\Scripts\Activate
 uvicorn service.app:app --host 127.0.0.1 --port 8001 --reload
+
+Spring boot:
+./mvnw spring-boot:run
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "features": {
+    "sms_total_30d": 120,
+    "sms_pay_kw_30d": 15,
+    "contacts_total": 200,
+    "contacts_family_ratio": 0.25,
+    "contacts_vendor_ratio": 0.10,
+    "social_posts_30d": 18,
+    "social_engagement_rate": 0.08,
+    "ecom_orders_90d": 12,
+    "ecom_aov": 35.5,
+    "ecom_late_ratio": 0.1,
+    "web_fintech_visits_30d": 20,
+    "web_gambling_visits_30d": 2,
+    "web_career_visits_30d": 5,
+    "email_txn_30d": 40,
+    "email_promo_ratio": 0.3,
+    "email_overdue_kw_30d": 1
+  }
+}
+

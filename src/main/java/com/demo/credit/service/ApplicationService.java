@@ -194,4 +194,82 @@ public class ApplicationService {
         var app = get(appId);
         return consent.proof(app.consentId);
     }
+
+    // Kết quả phân trang nội bộ
+    public static class PagedResult<T> {
+        public final int page, size, totalPages;
+        public final long total;
+        public final java.util.List<T> items;
+        public PagedResult(int page, int size, long total, java.util.List<T> items) {
+            this.page = page; this.size = size; this.total = total;
+            this.totalPages = (int) Math.ceil(total / (double) Math.max(1, size));
+            this.items = items;
+        }
+    }
+
+    /**
+     * Tìm kiếm/ lọc/ sort/ phân trang trên danh sách hồ sơ hiện có trong repo.
+     * @param decision  APPROVE | REVIEW | REJECT | (null/all)
+     * @param consent   active | inactive | all (mặc định all)
+     * @param q         tìm theo appId hoặc userId (contains, không phân biệt hoa thường)
+     * @param page      trang (0-based)
+     * @param size      số phần tử/ trang (mặc định 10)
+     * @param sort      "createdAt,desc" | "createdAt,asc" | "updatedAt,desc|asc"
+     */
+    public PagedResult<LoanApplication> search(
+            String decision, String consent, String q,
+            int page, int size, String sort
+    ) {
+        var all = repo.list();
+        java.util.stream.Stream<LoanApplication> s = all.stream();
+
+        // filter decision
+        if (decision != null && !decision.isBlank()) {
+            String d = decision.trim().toUpperCase();
+            s = s.filter(a -> a.decision != null && a.decision.equalsIgnoreCase(d));
+        }
+
+        // filter consent
+        if (consent != null && !consent.isBlank() && !"all".equalsIgnoreCase(consent)) {
+            boolean wantActive = "active".equalsIgnoreCase(consent);
+            s = s.filter(a -> Boolean.TRUE.equals(a.consentActive) == wantActive);
+        }
+
+        // search q
+        if (q != null && !q.isBlank()) {
+            String qq = q.toLowerCase();
+            s = s.filter(a ->
+                    (a.appId != null && a.appId.toLowerCase().contains(qq)) ||
+                            (a.userId != null && a.userId.toLowerCase().contains(qq))
+            );
+        }
+
+        // sort
+        java.util.Comparator<LoanApplication> cmp;
+        boolean desc = true; // mặc định desc
+        String field = "createdAt";
+        if (sort != null && !sort.isBlank()) {
+            var parts = sort.split(",", 2);
+            field = parts[0].trim();
+            if (parts.length > 1) desc = !"asc".equalsIgnoreCase(parts[1].trim());
+        }
+        if ("updatedAt".equalsIgnoreCase(field)) {
+            cmp = java.util.Comparator.comparingLong(a -> a.updatedAt);
+        } else {
+            cmp = java.util.Comparator.comparingLong(a -> a.createdAt);
+        }
+        if (desc) cmp = cmp.reversed();
+
+        var sorted = s.sorted(cmp).toList();
+
+        // page
+        int p = Math.max(0, page);
+        int sz = Math.max(1, size);
+        int from = Math.min(sorted.size(), p * sz);
+        int to   = Math.min(sorted.size(), from + sz);
+        var slice = (from < to) ? sorted.subList(from, to) : java.util.List.<LoanApplication>of();
+
+        return new PagedResult<>(p, sz, sorted.size(), slice);
+    }
+
 }

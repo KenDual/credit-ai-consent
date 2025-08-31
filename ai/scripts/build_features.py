@@ -214,30 +214,27 @@ def main():
 
     # ---------- Join all on user_id ----------
     feats = f_users.merge(f_sms, on="user_id", how="left") \
-                   .merge(f_ct, on="user_id", how="left") \
-                   .merge(f_social, on="user_id", how="left") \
-                   .merge(f_ecom, on="user_id", how="left") \
-                   .merge(f_web, on="user_id", how="left") \
-                   .merge(f_email, on="user_id", how="left")
+        .merge(f_ct, on="user_id", how="left") \
+        .merge(f_social, on="user_id", how="left") \
+        .merge(f_ecom, on="user_id", how="left") \
+        .merge(f_web, on="user_id", how="left") \
+        .merge(f_email, on="user_id", how="left")
 
-    # Add labels
+    # Labels
     labels = users[["user_id", "default_90d", "pd_true"]]
     feats = feats.merge(labels, on="user_id", how="left")
 
-    # Fill NaN → 0 for numeric
+    # Fill NaN → 0 for numeric columns
     for c in feats.columns:
-        if c == "user_id": continue
+        if c == "user_id":
+            continue
         feats[c] = feats[c].fillna(0)
 
     # Reorder: id, label(s), then features
     cols = ["user_id", "default_90d", "pd_true"] + [c for c in feats.columns if c not in ["user_id","default_90d","pd_true"]]
     feats = feats[cols]
 
-    # Save parquet
-    out_path = out_dir / "features.parquet"
-    feats.to_parquet(out_path, index=False)
-
-    # Save schema json
+    # ---------- Compute feature list & write schema first ----------
     feature_cols = [c for c in feats.columns if c not in ["user_id", "default_90d", "pd_true"]]
     schema = {
         "id_col": "user_id",
@@ -247,10 +244,21 @@ def main():
     }
     with open(schema_path, "w", encoding="utf-8") as f:
         json.dump(schema, f, ensure_ascii=False, indent=2)
-
-    print("[✓] features.parquet saved:", out_path)
-    print(f"[i] Rows: {len(feats):,} | Features: {len(feature_cols)} (excl. id & targets)")
     print("[i] schema json:", schema_path)
+
+    # ---------- Save parquet with CSV fallback ----------
+    out_parquet = out_dir / "features.parquet"
+    out_csv = out_dir / "features.csv"
+    try:
+        feats.to_parquet(out_parquet, index=False)  # needs pyarrow/fastparquet
+        print("[✓] features.parquet saved:", out_parquet)
+    except Exception as e:
+        print("[WARN] to_parquet failed:", e)
+        feats.to_csv(out_csv, index=False)
+        print("[✓] Fallback: features.csv saved:", out_csv)
+
+    # ---------- Summary ----------
+    print(f"[i] Rows: {len(feats):,} | Features: {len(feature_cols)} (excl. id & targets)")
 
 if __name__ == "__main__":
     main()

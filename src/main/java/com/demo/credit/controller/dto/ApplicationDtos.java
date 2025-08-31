@@ -6,6 +6,7 @@ import com.demo.credit.repository.LoanApplication;
 import java.util.List;
 
 public final class ApplicationDtos {
+
     private ApplicationDtos() {}
 
     public static class CreateRequest {
@@ -55,5 +56,13 @@ public final class ApplicationDtos {
             d.createdAt = a.createdAt; d.updatedAt = a.updatedAt;
             return d;
         }
+    }
+
+    public static class AppListResponse {
+        public int page;
+        public int size;
+        public long total;
+        public int totalPages;
+        public List<AppSummary> items;
     }
 }
