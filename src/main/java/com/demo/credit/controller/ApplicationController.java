@@ -8,6 +8,8 @@ import com.demo.credit.service.dto.ScoreResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import com.demo.credit.controller.dto.ReasonDtos;
+import com.demo.credit.service.ExplainService;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -19,9 +21,11 @@ import java.util.stream.Collectors;
 public class ApplicationController {
 
     private final ApplicationService apps;
+    private final ExplainService explain;
 
-    public ApplicationController(ApplicationService apps) {
+    public ApplicationController(ApplicationService apps, ExplainService explain) {
         this.apps = apps;
+        this.explain = explain;
     }
 
     /** Tạo hồ sơ mới từ consentId đã có */
@@ -95,6 +99,23 @@ public class ApplicationController {
             // consent invalid / expired / revoked
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ise.getMessage(), ise);
         }
+    }
+
+    @GetMapping("/{appId}/reasons")
+    public ReasonDtos.ReasonsResponse reasons(@PathVariable String appId,
+                                              @RequestParam(defaultValue = "3") int topK,
+                                              @RequestParam(defaultValue = "vi") String locale) {
+        var app = apps.get(appId);
+        var reasons = explain.topReasons(app, topK, locale);
+
+        ReasonDtos.ReasonsResponse res = new ReasonDtos.ReasonsResponse();
+        res.appId = app.appId;
+        res.decision = app.decision;
+        res.score = app.score;
+        res.pd = app.pd;
+        res.threshold = app.threshold;
+        res.reasons = reasons;
+        return res;
     }
 
     /** Thu hồi consent của hồ sơ */
