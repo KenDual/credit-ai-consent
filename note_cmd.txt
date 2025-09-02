@@ -12,11 +12,38 @@ npm start
 npm run demo
 
 AI:
-pip install pyarrow
-pip install -r ai\requirements.txt          # if reclone project
-py -3 -m venv .venv                         # hoặc: python -m venv .venv
+.\.venv\Scripts\Activate
+
+pip install -r requirements.txt                                       # if reclone project
+py -3 -m venv .venv                                                   # hoặc: python -m venv .venv
+python .\scripts\generate_synth.py --users 500 --days 90 --seed 42    #generate data (if haven't) 
+python .\scripts\build_features.py                                    # build features & schema
+
+$env:TARGET_BASE_PD="0.08"  # (PD: 0.05 - dành cho các danh mục ít rủi ro hơn || PD: 0.10 - dành cho danh mục rủi ro cao)
+python .\train\train_lgbm.py `
+  --in .\data\processed\features.parquet `
+  --out .\models `
+  --target default_90d `
+  --id user_id 
+
+# 1) Đặt prior mong muốn (ví dụ 5% cho danh mục an toàn)
+'{"prior_pd": 0.05}' | Set-Content .\models\runtime_prior.json -Encoding UTF8
+
+# 2) (Tuỳ chọn) Kiểm tra service đã nhận prior chưa
+Invoke-RestMethod http://127.0.0.1:8001/health | ConvertTo-Json
+
+# 3) Gửi hồ sơ đẹp để chấm điểm
+$body = Get-Content .\payloads\approve.json -Raw   # hoặc chuỗi JSON inline
+Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8001/score `
+  -ContentType 'application/json' -Body $body | ConvertTo-Json
+
+# 4) Quay về default PD: 0.08
+Remove-Item .\models\runtime_prior.json
 
 .\.venv\Scripts\Activate
+$env:DECISION_MODE="score"
+$env:SCORE_APPROVE_MIN="700"
+$env:SCORE_REVIEW_MIN="650"
 uvicorn service.app:app --host 127.0.0.1 --port 8001 --reload
 
 Spring boot:
@@ -24,10 +51,76 @@ Spring boot:
 
 
 
-
-
-
 APPROVE:
+{
+  "features": {
+    "pd_true": 0,
+
+    "age": 38,
+    "monthly_income_vnd": 60000000,
+
+    "emp_contract": 1, "emp_formal": 1, "emp_gig": 0, "emp_self": 0, "emp_student": 0,
+
+    "region_CT": 0, "region_DN": 0, "region_HCM": 1, "region_HN": 0, "region_HP": 0, "region_NT": 0,
+
+    "gender_F": 1, "gender_M": 0,
+
+    "sms_count": 180,
+    "sms_in_ratio": 0.70,
+    "sms_fin_ratio": 0.00,
+    "sms_kw_ratio": 0.00,
+
+    "contacts_count": 500,
+    "contacts_risky_ratio": 0.00,
+    "rel_coworker_ratio": 0.30,
+    "rel_family_ratio": 0.30,
+    "rel_friend_ratio": 0.20,
+    "rel_service_ratio": 0.10,
+    "rel_unknown_ratio": 0.10,
+
+    "social_rows": 120,
+    "social_active_days": 26,
+    "social_posts_sum": 15,
+    "social_likes_sum": 1200,
+    "social_friends_avg": 800,
+    "social_violations_avg": 0,
+    "social_engagement": 0.25,
+
+    "ecom_orders": 36,
+    "ecom_spend_sum": 3000.0,
+    "ecom_basket_avg": 83.3,
+    "ecom_cod_ratio": 0.00,
+    "ecom_return_ratio": 0.00,
+    "ecom_cat_beauty_ratio": 0.05,
+    "ecom_cat_electronics_ratio": 0.25,
+    "ecom_cat_fashion_ratio": 0.10,
+    "ecom_cat_gaming_ratio": 0.00,
+    "ecom_cat_grocery_ratio": 0.20,
+    "ecom_cat_home_ratio": 0.25,
+    "ecom_cat_others_ratio": 0.15,
+
+    "web_visits": 80,
+    "web_banking_ratio": 0.40,
+    "web_education_ratio": 0.15,
+    "web_entertainment_ratio": 0.10,
+    "web_gambling_ratio": 0.00,
+    "web_news_ratio": 0.20,
+    "web_shopping_ratio": 0.10,
+    "web_short_loan_ratio": 0.00,
+    "web_social_ratio": 0.05,
+
+    "email_count": 180,
+    "email_overdue_ratio": 0.00,
+    "email_type_job_ratio": 0.10,
+    "email_type_promo_ratio": 0.05,
+    "email_type_statement_ratio": 0.15,
+    "email_type_transaction_ratio": 0.55,
+    "email_type_unknown_ratio": 0.05,
+    "email_type_utility_ratio": 0.10
+  }
+}
+
+REVIEW:
 {
   "features": {
     "pd_true": 0,

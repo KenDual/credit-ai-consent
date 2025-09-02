@@ -17,6 +17,53 @@ MODEL_PATH = ART_DIR / "model.pkl"
 SCHEMA_PATH = ART_DIR / "feature_schema.json"
 EXPLAINER_PATH = ART_DIR / "shap_explainer.pkl"
 
+# === Runtime prior shift (no new endpoint) ===
+METRICS_PATH = ART_DIR / "metrics.json"              # prior khi train (pi_train)
+RUNTIME_PRIOR_PATH = ART_DIR / "runtime_prior.json"  # file runtime: {"prior_pd": 0.05}
+
+def _read_json_silent(path: Path):
+    try:
+        text = path.read_text(encoding="utf-8")
+        text = text.lstrip("\ufeff").strip()
+        return json.loads(text)
+    except Exception:
+        return None
+
+# Lấy prior đã dùng khi train (target_base_pd trong metrics.json)
+TRAIN_PRIOR_PD = None
+_m = _read_json_silent(METRICS_PATH)
+if _m and isinstance(_m, dict) and _m.get("target_base_pd") is not None:
+    try:
+        TRAIN_PRIOR_PD = float(_m["target_base_pd"])
+    except Exception:
+        TRAIN_PRIOR_PD = None
+
+def get_runtime_prior_pd() -> Optional[float]:
+    """
+    Đọc prior mong muốn tại runtime từ runtime_prior.json.
+    Trả về None nếu không thiết lập -> giữ PD gốc từ model.
+    """
+    cfg = _read_json_silent(RUNTIME_PRIOR_PATH)
+    if isinstance(cfg, dict) and "prior_pd" in cfg:
+        try:
+            val = float(cfg["prior_pd"])
+            if 1e-6 < val < 0.9999:
+                return val
+        except Exception:
+            pass
+    return None
+
+def prior_shift_adjust(p: float, pi_train: float, pi_target: float) -> float:
+    """
+    Saerens posterior adjustment (prior shift):
+    p' = (p * (pi_target/pi_train)) / ( p * (pi_target/pi_train) + (1-p) * ((1-pi_target)/(1-pi_train)) )
+    """
+    p = float(np.clip(p, 1e-9, 1 - 1e-9))
+    num = p * (pi_target / pi_train)
+    den = num + (1.0 - p) * ((1.0 - pi_target) / (1.0 - pi_train))
+    return float(np.clip(num / den, 1e-9, 1 - 1e-9))
+
+
 # ---------- Load artifacts ----------
 if not MODEL_PATH.exists() or not SCHEMA_PATH.exists():
     raise FileNotFoundError(f"Artifacts not found. Expect {MODEL_PATH} & {SCHEMA_PATH}")
@@ -38,19 +85,17 @@ if present_illegal:
     print(f"[WARN] Removing illegal columns from FEAT_ORDER: {present_illegal}")
     FEAT_ORDER = [c for c in FEAT_ORDER if c not in ILLEGAL]
 
-# If model exposes feature names, align ordering **robustly** (LightGBM safe)
+# Align ordering with model feature names (LightGBM-safe)
 model_feats_note = None
 feature_sync_note = None
 MODEL_FEATURES: List[str] = []
 
-# Prefer LightGBM booster feature names
 try:
     if hasattr(model, "booster_") and model.booster_ is not None:
         MODEL_FEATURES = list(model.booster_.feature_name())
 except Exception:
     MODEL_FEATURES = []
 
-# Fallbacks
 if not MODEL_FEATURES and hasattr(model, "feature_name_"):
     MODEL_FEATURES = list(getattr(model, "feature_name_"))
 if not MODEL_FEATURES and hasattr(model, "feature_names_in_"):
@@ -59,10 +104,10 @@ if not MODEL_FEATURES and hasattr(model, "feature_names_in_"):
 if MODEL_FEATURES:
     mset, sset = set(MODEL_FEATURES), set(FEAT_ORDER)
     if mset == sset:
-        FEAT_ORDER = MODEL_FEATURES  # exact match, keep model order
+        FEAT_ORDER = MODEL_FEATURES
     elif mset.issuperset(sset):
         missing = [c for c in MODEL_FEATURES if c not in sset]
-        FEAT_ORDER = MODEL_FEATURES   # extend to model order; ensure_vector will pad zeros
+        FEAT_ORDER = MODEL_FEATURES
         feature_sync_note = f"Schema missing {len(missing)} model features (padded with 0): {missing[:5]}..."
     elif mset.issubset(sset):
         extra = [c for c in FEAT_ORDER if c not in mset]
@@ -71,7 +116,6 @@ if MODEL_FEATURES:
     else:
         model_feats_note = "Model & schema feature sets differ (not subset/superset). Using schema order; may error."
 else:
-    # As a minimum, check count only
     if hasattr(model, "n_features_in_") and len(FEAT_ORDER) != int(getattr(model, "n_features_in_")):
         model_feats_note = "feature count differs from model.n_features_in_"
 
@@ -86,8 +130,8 @@ MODEL_VERSION  = os.getenv("MODEL_VERSION", str(int(MODEL_PATH.stat().st_mtime))
 SCHEMA_VERSION = schema.get("created_at") or os.getenv("FEATURE_SCHEMA_VERSION", "")
 
 # ---------- Decision config ----------
-THRESHOLD = float(os.getenv("THRESHOLD", "0.50"))      # for PD mode
-DECISION_MODE = os.getenv("DECISION_MODE", "score")     # 'pd' | 'score' (default to score per MVP)
+THRESHOLD = float(os.getenv("THRESHOLD", "0.50"))         # for PD mode
+DECISION_MODE = os.getenv("DECISION_MODE", "score")        # 'pd' | 'score'
 SCORE_APPROVE_MIN = int(os.getenv("SCORE_APPROVE_MIN", "700"))
 SCORE_REVIEW_MIN  = int(os.getenv("SCORE_REVIEW_MIN",  "650"))
 MIN_NONZERO_FEATURES = int(os.getenv("MIN_NONZERO_FEATURES", "10"))
@@ -102,7 +146,6 @@ def prob_to_score(pd_prob: np.ndarray) -> np.ndarray:
     odds = (1 - pd_prob) / pd_prob
     score = 600 + 50 * (np.log2(odds / 20))
     return np.clip(score, 300, 900).astype(int)
-
 
 def ensure_vector(features: Dict[str, float]) -> Tuple[pd.DataFrame, List[str]]:
     """
@@ -122,11 +165,8 @@ def ensure_vector(features: Dict[str, float]) -> Tuple[pd.DataFrame, List[str]]:
     X = pd.DataFrame([row], columns=FEAT_ORDER)
     return X, missing
 
-
 def shap_topk(X: pd.DataFrame, k: int = 5):
-    """Return top-k SHAP contributions as list of dicts. Empty list if explainer not available.
-    Filters out ILLEGAL features (e.g., pd_true) from display.
-    """
+    """Top-k SHAP contributions; ẩn các feature ILLEGAL."""
     if explainer is None:
         return []
     try:
@@ -163,10 +203,8 @@ class ShapItem(BaseModel):
     abs_shap: float
     direction: str
 
-
 class ScoreIn(BaseModel):
     features: Dict[str, float] = Field(..., description="Feature dictionary")
-
 
 class ScoreOut(BaseModel):
     pd: float
@@ -188,9 +226,12 @@ class ScoreOut(BaseModel):
     # pd bands (only when DECISION_MODE='pd')
     pd_approve_max: Optional[float] = None
     pd_review_max: Optional[float] = None
+    # prior audit
+    train_prior_pd: Optional[float] = None
+    prior_pd: Optional[float] = None
 
 # ---------- App ----------
-app = FastAPI(title="Credit AI Scoring Service", version="1.2.2")
+app = FastAPI(title="Credit AI Scoring Service", version="1.3.0")
 
 # (Optional) CORS if needed by browser clients
 app.add_middleware(
@@ -198,19 +239,18 @@ app.add_middleware(
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
-
 @app.get("/health")
 def health():
     return {
         "status": "ok",
         "model_path": str(MODEL_PATH),
         "feature_count": len(FEAT_ORDER),
-        "threshold": THRESHOLD,
         "decision_mode": DECISION_MODE,
+        "threshold": THRESHOLD,
         "score_approve_min": SCORE_APPROVE_MIN,
         "score_review_min": SCORE_REVIEW_MIN,
-        "pd_approve_max": PD_APPROVE_MAX,
-        "pd_review_max": PD_REVIEW_MAX,
+        "pd_approve_max": PD_APPROVE_MAX if DECISION_MODE == "pd" else None,
+        "pd_review_max": PD_REVIEW_MAX if DECISION_MODE == "pd" else None,
         "model_feats_note": model_feats_note,
         "feature_sync_note": feature_sync_note,
         "model_feature_count": len(MODEL_FEATURES) if MODEL_FEATURES else None,
@@ -218,10 +258,10 @@ def health():
         "stripped_illegal": present_illegal,
         "model_version": MODEL_VERSION,
         "feature_schema_version": SCHEMA_VERSION,
-        "pd_approve_max": PD_APPROVE_MAX if DECISION_MODE == "pd" else None,
-        "pd_review_max": PD_REVIEW_MAX if DECISION_MODE == "pd" else None,
+        # prior audit
+        "train_prior_pd": TRAIN_PRIOR_PD,
+        "runtime_prior_pd": get_runtime_prior_pd(),
     }
-
 
 @app.get("/schema/features")
 def schema_features():
@@ -232,11 +272,22 @@ def schema_features():
         "feature_schema_version": SCHEMA_VERSION
     }
 
-
 @app.post("/score", response_model=ScoreOut)
 def score(inp: ScoreIn):
     X, missing = ensure_vector(inp.features)
-    pd_prob = float(model.predict_proba(X)[:, 1][0])
+
+    # PD gốc từ model
+    pd_prob_raw = float(model.predict_proba(X)[:, 1][0])
+    pd_prob = pd_prob_raw
+
+    # Nếu có prior runtime và biết prior lúc train -> dịch PD (online, không cần restart)
+    pi_runtime = get_runtime_prior_pd()
+    if (pi_runtime is not None) and (TRAIN_PRIOR_PD is not None) and (0.0 < TRAIN_PRIOR_PD < 1.0):
+        try:
+            pd_prob = prior_shift_adjust(pd_prob_raw, TRAIN_PRIOR_PD, pi_runtime)
+        except Exception:
+            pd_prob = pd_prob_raw
+
     score_val = int(prob_to_score(np.array([pd_prob]))[0])
 
     # Primary decision
@@ -262,13 +313,13 @@ def score(inp: ScoreIn):
         score_approve_min = SCORE_APPROVE_MIN
         score_review_min  = SCORE_REVIEW_MIN
 
-    # Gate: avoid auto-approve if data too sparse
+    # Gate: tránh auto-approve khi dữ liệu quá thưa
     nonzero = int((X.values != 0).sum())
     if nonzero < MIN_NONZERO_FEATURES and decision == "approve":
         decision = "review"
 
     try:
-        topk = shap_topk(X, k=3)  # top-3 per MVP
+        topk = shap_topk(X, k=3)  # top-3 theo MVP
     except Exception:
         topk = []
 
@@ -288,4 +339,7 @@ def score(inp: ScoreIn):
         "stripped_illegal": present_illegal,
         "model_version": MODEL_VERSION,
         "feature_schema_version": SCHEMA_VERSION,
+        # prior audit
+        "train_prior_pd": TRAIN_PRIOR_PD,
+        "prior_pd": pi_runtime,
     }
