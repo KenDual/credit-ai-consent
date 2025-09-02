@@ -12,7 +12,10 @@ npm start
 npm run demo
 
 AI:
-py -3 -m venv .venv                 # hoặc: python -m venv .venv
+pip install pyarrow
+pip install -r ai\requirements.txt          # if reclone project
+py -3 -m venv .venv                         # hoặc: python -m venv .venv
+
 .\.venv\Scripts\Activate
 uvicorn service.app:app --host 127.0.0.1 --port 8001 --reload
 
@@ -24,31 +27,138 @@ Spring boot:
 
 
 
-
-
-
-
-
-
-
+APPROVE:
 {
   "features": {
-    "sms_total_30d": 120,
-    "sms_pay_kw_30d": 15,
-    "contacts_total": 200,
-    "contacts_family_ratio": 0.25,
-    "contacts_vendor_ratio": 0.10,
-    "social_posts_30d": 18,
-    "social_engagement_rate": 0.08,
-    "ecom_orders_90d": 12,
-    "ecom_aov": 35.5,
-    "ecom_late_ratio": 0.1,
-    "web_fintech_visits_30d": 20,
-    "web_gambling_visits_30d": 2,
-    "web_career_visits_30d": 5,
-    "email_txn_30d": 40,
-    "email_promo_ratio": 0.3,
-    "email_overdue_kw_30d": 1
+    "pd_true": 0,
+    "age": 34,
+    "monthly_income_vnd": 45000000,
+
+    "emp_contract": 0, "emp_formal": 1, "emp_gig": 0, "emp_self": 0, "emp_student": 0,
+
+    "region_CT": 0, "region_DN": 0, "region_HCM": 1, "region_HN": 0, "region_HP": 0, "region_NT": 0,
+
+    "gender_F": 0, "gender_M": 1,
+
+    "sms_count": 200,
+    "sms_in_ratio": 0.6,
+    "sms_fin_ratio": 0.0,
+    "sms_kw_ratio": 0.0,
+
+    "contacts_count": 350,
+    "contacts_risky_ratio": 0.0,
+    "rel_coworker_ratio": 0.25,
+    "rel_family_ratio": 0.25,
+    "rel_friend_ratio": 0.20,
+    "rel_service_ratio": 0.10,
+    "rel_unknown_ratio": 0.20,
+
+    "social_rows": 60,
+    "social_active_days": 25,
+    "social_posts_sum": 20,
+    "social_likes_sum": 300,
+    "social_friends_avg": 500,
+    "social_violations_avg": 0,
+    "social_engagement": 0.15,
+
+    "ecom_orders": 24,
+    "ecom_spend_sum": 1200.0,
+    "ecom_basket_avg": 50.0,
+    "ecom_cod_ratio": 0.05,
+    "ecom_return_ratio": 0.02,
+    "ecom_cat_beauty_ratio": 0.05,
+    "ecom_cat_electronics_ratio": 0.20,
+    "ecom_cat_fashion_ratio": 0.10,
+    "ecom_cat_gaming_ratio": 0.05,
+    "ecom_cat_grocery_ratio": 0.20,
+    "ecom_cat_home_ratio": 0.20,
+    "ecom_cat_others_ratio": 0.20,
+
+    "web_visits": 60,
+    "web_banking_ratio": 0.30,
+    "web_education_ratio": 0.20,
+    "web_entertainment_ratio": 0.10,
+    "web_gambling_ratio": 0.0,
+    "web_news_ratio": 0.20,
+    "web_shopping_ratio": 0.20,
+    "web_short_loan_ratio": 0.0,
+    "web_social_ratio": 0.20,
+
+    "email_count": 120,
+    "email_overdue_ratio": 0.0,
+    "email_type_job_ratio": 0.10,
+    "email_type_promo_ratio": 0.10,
+    "email_type_statement_ratio": 0.10,
+    "email_type_transaction_ratio": 0.60,
+    "email_type_unknown_ratio": 0.0,
+    "email_type_utility_ratio": 0.10
   }
 }
 
+REJECT:
+{
+  "features": {
+    "pd_true": 0,
+    "age": 22,
+    "monthly_income_vnd": 3000000,
+
+    "emp_contract": 0, "emp_formal": 0, "emp_gig": 1, "emp_self": 0, "emp_student": 0,
+
+    "region_CT": 1, "region_DN": 0, "region_HCM": 0, "region_HN": 0, "region_HP": 0, "region_NT": 0,
+
+    "gender_F": 0, "gender_M": 1,
+
+    "sms_count": 80,
+    "sms_in_ratio": 0.2,
+    "sms_fin_ratio": 0.4,
+    "sms_kw_ratio": 0.4,
+
+    "contacts_count": 60,
+    "contacts_risky_ratio": 0.35,
+    "rel_coworker_ratio": 0.05,
+    "rel_family_ratio": 0.05,
+    "rel_friend_ratio": 0.10,
+    "rel_service_ratio": 0.20,
+    "rel_unknown_ratio": 0.60,
+
+    "social_rows": 60,
+    "social_active_days": 5,
+    "social_posts_sum": 60,
+    "social_likes_sum": 10,
+    "social_friends_avg": 80,
+    "social_violations_avg": 2,
+    "social_engagement": 0.02,
+
+    "ecom_orders": 8,
+    "ecom_spend_sum": 120.0,
+    "ecom_basket_avg": 15.0,
+    "ecom_cod_ratio": 0.90,
+    "ecom_return_ratio": 0.30,
+    "ecom_cat_beauty_ratio": 0.10,
+    "ecom_cat_electronics_ratio": 0.0,
+    "ecom_cat_fashion_ratio": 0.50,
+    "ecom_cat_gaming_ratio": 0.20,
+    "ecom_cat_grocery_ratio": 0.0,
+    "ecom_cat_home_ratio": 0.0,
+    "ecom_cat_others_ratio": 0.20,
+
+    "web_visits": 90,
+    "web_banking_ratio": 0.0,
+    "web_education_ratio": 0.0,
+    "web_entertainment_ratio": 0.40,
+    "web_gambling_ratio": 0.20,
+    "web_news_ratio": 0.0,
+    "web_shopping_ratio": 0.40,
+    "web_short_loan_ratio": 0.70,
+    "web_social_ratio": 0.50,
+
+    "email_count": 40,
+    "email_overdue_ratio": 0.20,
+    "email_type_job_ratio": 0.0,
+    "email_type_promo_ratio": 0.70,
+    "email_type_statement_ratio": 0.0,
+    "email_type_transaction_ratio": 0.10,
+    "email_type_unknown_ratio": 0.10,
+    "email_type_utility_ratio": 0.10
+  }
+}

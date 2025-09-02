@@ -38,17 +38,41 @@ if present_illegal:
     print(f"[WARN] Removing illegal columns from FEAT_ORDER: {present_illegal}")
     FEAT_ORDER = [c for c in FEAT_ORDER if c not in ILLEGAL]
 
-# If model exposes feature names, align ordering if sets match
+# If model exposes feature names, align ordering **robustly** (LightGBM safe)
 model_feats_note = None
-if hasattr(model, "feature_names_in_"):
-    model_names = list(getattr(model, "feature_names_in_"))
-    if set(model_names) == set(FEAT_ORDER):
-        FEAT_ORDER = model_names  # enforce exact order used in training
+feature_sync_note = None
+MODEL_FEATURES: List[str] = []
+
+# Prefer LightGBM booster feature names
+try:
+    if hasattr(model, "booster_") and model.booster_ is not None:
+        MODEL_FEATURES = list(model.booster_.feature_name())
+except Exception:
+    MODEL_FEATURES = []
+
+# Fallbacks
+if not MODEL_FEATURES and hasattr(model, "feature_name_"):
+    MODEL_FEATURES = list(getattr(model, "feature_name_"))
+if not MODEL_FEATURES and hasattr(model, "feature_names_in_"):
+    MODEL_FEATURES = list(getattr(model, "feature_names_in_"))
+
+if MODEL_FEATURES:
+    mset, sset = set(MODEL_FEATURES), set(FEAT_ORDER)
+    if mset == sset:
+        FEAT_ORDER = MODEL_FEATURES  # exact match, keep model order
+    elif mset.issuperset(sset):
+        missing = [c for c in MODEL_FEATURES if c not in sset]
+        FEAT_ORDER = MODEL_FEATURES   # extend to model order; ensure_vector will pad zeros
+        feature_sync_note = f"Schema missing {len(missing)} model features (padded with 0): {missing[:5]}..."
+    elif mset.issubset(sset):
+        extra = [c for c in FEAT_ORDER if c not in mset]
+        FEAT_ORDER = MODEL_FEATURES
+        feature_sync_note = f"Schema has {len(extra)} extra features not used by model (ignored): {extra[:5]}..."
     else:
-        model_feats_note = "model.feature_names_in_ differs from schema features"
-elif hasattr(model, "n_features_in_"):
-    # at least check count
-    if len(FEAT_ORDER) != int(getattr(model, "n_features_in_")):
+        model_feats_note = "Model & schema feature sets differ (not subset/superset). Using schema order; may error."
+else:
+    # As a minimum, check count only
+    if hasattr(model, "n_features_in_") and len(FEAT_ORDER) != int(getattr(model, "n_features_in_")):
         model_feats_note = "feature count differs from model.n_features_in_"
 
 # SHAP explainer (optional)
@@ -57,12 +81,19 @@ try:
 except Exception:
     explainer = None
 
+# ---------- Versioning (for auditability) ----------
+MODEL_VERSION  = os.getenv("MODEL_VERSION", str(int(MODEL_PATH.stat().st_mtime)))
+SCHEMA_VERSION = schema.get("created_at") or os.getenv("FEATURE_SCHEMA_VERSION", "")
+
 # ---------- Decision config ----------
-THRESHOLD = float(os.getenv("THRESHOLD", "0.50"))   # for PD mode
-DECISION_MODE = os.getenv("DECISION_MODE", "pd")     # 'pd' | 'score'
+THRESHOLD = float(os.getenv("THRESHOLD", "0.50"))      # for PD mode
+DECISION_MODE = os.getenv("DECISION_MODE", "score")     # 'pd' | 'score' (default to score per MVP)
 SCORE_APPROVE_MIN = int(os.getenv("SCORE_APPROVE_MIN", "700"))
 SCORE_REVIEW_MIN  = int(os.getenv("SCORE_REVIEW_MIN",  "650"))
 MIN_NONZERO_FEATURES = int(os.getenv("MIN_NONZERO_FEATURES", "10"))
+# PD bands (used only when DECISION_MODE='pd')
+PD_APPROVE_MAX = float(os.getenv("PD_APPROVE_MAX", os.getenv("PD_APPROVE", "0.01235")))
+PD_REVIEW_MAX  = float(os.getenv("PD_REVIEW_MAX",  os.getenv("PD_REVIEW",  "0.02439")))
 
 # ---------- Helpers ----------
 def prob_to_score(pd_prob: np.ndarray) -> np.ndarray:
@@ -70,7 +101,8 @@ def prob_to_score(pd_prob: np.ndarray) -> np.ndarray:
     pd_prob = np.clip(pd_prob, 1e-6, 1 - 1e-6)
     odds = (1 - pd_prob) / pd_prob
     score = 600 + 50 * (np.log2(odds / 20))
-    return score.astype(int)
+    return np.clip(score, 300, 900).astype(int)
+
 
 def ensure_vector(features: Dict[str, float]) -> Tuple[pd.DataFrame, List[str]]:
     """
@@ -90,8 +122,11 @@ def ensure_vector(features: Dict[str, float]) -> Tuple[pd.DataFrame, List[str]]:
     X = pd.DataFrame([row], columns=FEAT_ORDER)
     return X, missing
 
+
 def shap_topk(X: pd.DataFrame, k: int = 5):
-    """Return top-k SHAP contributions as list of dicts. Empty list if explainer not available."""
+    """Return top-k SHAP contributions as list of dicts. Empty list if explainer not available.
+    Filters out ILLEGAL features (e.g., pd_true) from display.
+    """
     if explainer is None:
         return []
     try:
@@ -103,16 +138,21 @@ def shap_topk(X: pd.DataFrame, k: int = 5):
             sv = sv[-1]
     sv = np.array(sv)[0]
     vals = X.iloc[0].to_dict()
-    idx = np.argsort(np.abs(sv))[::-1][:k]
+    idx = np.argsort(np.abs(sv))[::-1]
     top = []
     for i in idx:
+        name = FEAT_ORDER[i]
+        if name in ILLEGAL:
+            continue
         top.append({
-            "feature": FEAT_ORDER[i],
-            "value": float(vals[FEAT_ORDER[i]]),
+            "feature": name,
+            "value": float(vals.get(name, 0.0)),
             "shap": float(sv[i]),
             "abs_shap": float(abs(sv[i])),
             "direction": "up" if sv[i] > 0 else "down"
         })
+        if len(top) >= k:
+            break
     return top
 
 # ---------- Schemas ----------
@@ -123,8 +163,10 @@ class ShapItem(BaseModel):
     abs_shap: float
     direction: str
 
+
 class ScoreIn(BaseModel):
     features: Dict[str, float] = Field(..., description="Feature dictionary")
+
 
 class ScoreOut(BaseModel):
     pd: float
@@ -140,15 +182,22 @@ class ScoreOut(BaseModel):
     used_nonzero_features: Optional[int] = None
     model_feats_note: Optional[str] = None
     stripped_illegal: Optional[List[str]] = None
+    # versions for audit
+    model_version: Optional[str] = None
+    feature_schema_version: Optional[str] = None
+    # pd bands (only when DECISION_MODE='pd')
+    pd_approve_max: Optional[float] = None
+    pd_review_max: Optional[float] = None
 
 # ---------- App ----------
-app = FastAPI(title="Credit AI Scoring Service", version="1.1.1")
+app = FastAPI(title="Credit AI Scoring Service", version="1.2.2")
 
 # (Optional) CORS if needed by browser clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
+
 
 @app.get("/health")
 def health():
@@ -160,13 +209,29 @@ def health():
         "decision_mode": DECISION_MODE,
         "score_approve_min": SCORE_APPROVE_MIN,
         "score_review_min": SCORE_REVIEW_MIN,
+        "pd_approve_max": PD_APPROVE_MAX,
+        "pd_review_max": PD_REVIEW_MAX,
         "model_feats_note": model_feats_note,
-        "stripped_illegal": present_illegal
+        "feature_sync_note": feature_sync_note,
+        "model_feature_count": len(MODEL_FEATURES) if MODEL_FEATURES else None,
+        "schema_feature_count": len(FEAT_ORDER),
+        "stripped_illegal": present_illegal,
+        "model_version": MODEL_VERSION,
+        "feature_schema_version": SCHEMA_VERSION,
+        "pd_approve_max": PD_APPROVE_MAX if DECISION_MODE == "pd" else None,
+        "pd_review_max": PD_REVIEW_MAX if DECISION_MODE == "pd" else None,
     }
+
 
 @app.get("/schema/features")
 def schema_features():
-    return {"features": FEAT_ORDER, "count": len(FEAT_ORDER)}
+    return {
+        "features": FEAT_ORDER,
+        "count": len(FEAT_ORDER),
+        "model_features": MODEL_FEATURES if MODEL_FEATURES else None,
+        "feature_schema_version": SCHEMA_VERSION
+    }
+
 
 @app.post("/score", response_model=ScoreOut)
 def score(inp: ScoreIn):
@@ -176,8 +241,13 @@ def score(inp: ScoreIn):
 
     # Primary decision
     if DECISION_MODE == "pd":
-        decision = "approve" if pd_prob < THRESHOLD else "reject"
-        score_threshold = int(prob_to_score(np.array([THRESHOLD]))[0])
+        if pd_prob < PD_APPROVE_MAX:
+            decision = "approve"
+        elif pd_prob < PD_REVIEW_MAX:
+            decision = "review"
+        else:
+            decision = "reject"
+        score_threshold = None
         score_approve_min = None
         score_review_min  = None
     else:
@@ -198,7 +268,7 @@ def score(inp: ScoreIn):
         decision = "review"
 
     try:
-        topk = shap_topk(X, k=5)
+        topk = shap_topk(X, k=3)  # top-3 per MVP
     except Exception:
         topk = []
 
@@ -215,5 +285,7 @@ def score(inp: ScoreIn):
         "score_review_min": score_review_min,
         "used_nonzero_features": nonzero,
         "model_feats_note": model_feats_note,
-        "stripped_illegal": present_illegal
+        "stripped_illegal": present_illegal,
+        "model_version": MODEL_VERSION,
+        "feature_schema_version": SCHEMA_VERSION,
     }
