@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Credit AI Consent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+
+<body class="min-h-screen bg-gray-50">
+    <nav class="p-4 bg-white shadow flex gap-4">
+        <a href="/borrower" class="font-medium">Borrower</a>
+        <a href="/risk" class="font-medium">Risk Console</a>
+    </nav>
+    <main class="p-4">
+        <!-- content -->
+        <div th:replace="${content}"></div>
+    </main>
+    <!-- Bundle utils -->
+    <script src="/js/api.js"></script>
+</body>
+
+</html>
