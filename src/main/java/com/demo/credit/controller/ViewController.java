@@ -21,7 +21,7 @@ public class ViewController {
         return "risk-list";
     }
 
-    @GetMapping("/risk/details")
+    @GetMapping("/risk/detail")
     public String riskDetail() {
         return "risk-detail";
     }

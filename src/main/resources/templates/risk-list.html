@@ -1,34 +1,42 @@
 <!doctype html>
-<html th:replace="~{layout :: content}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
-<body>
-    <section class="p-4 bg-white shadow rounded">
-        <h2 class="text-lg font-semibold mb-3">Risk — Danh sách hồ sơ</h2>
-        <div class="flex gap-2 mb-3">
-            <select id="status" class="border p-2">
-                <option value="">(All)</option>
-                <option>CREATED</option>
-                <option>SCORED</option>
-                <option>DECIDED</option>
-            </select>
-            <input id="q" class="border p-2" placeholder="Tìm kiếm" />
-            <button id="btnLoad" class="px-3 py-2 bg-black text-white rounded">Tải</button>
-        </div>
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left">
-                    <th>Ref</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th>Score</th>
-                    <th>PD</th>
-                    <th>Decision</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-        </table>
-    </section>
+<head th:replace="layout :: head"></head>
+
+<body class="min-h-screen bg-gray-50">
+    <nav th:replace="layout :: nav"></nav>
+
+    <main class="p-4">
+        <section class="p-4 bg-white shadow rounded">
+            <h2 class="text-lg font-semibold mb-3">Risk — Danh sách hồ sơ</h2>
+            <div class="flex gap-2 mb-3">
+                <select id="status" class="border p-2">
+                    <option value="">(All)</option>
+                    <option>CREATED</option>
+                    <option>SCORED</option>
+                    <option>DECIDED</option>
+                </select>
+                <input id="q" class="border p-2" placeholder="Tìm kiếm" />
+                <button id="btnLoad" class="px-3 py-2 bg-black text-white rounded">Tải</button>
+            </div>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left">
+                        <th>Ref</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th>PD</th>
+                        <th>Decision</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="/js/api.js"></script>
     <script src="/js/risk-list.js"></script>
 </body>
 

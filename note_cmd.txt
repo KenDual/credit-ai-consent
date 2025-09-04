@@ -19,7 +19,7 @@ py -3 -m venv .venv                                                   # hoặc: 
 python .\scripts\generate_synth.py --users 500 --days 90 --seed 42    #generate data (if haven't) 
 python .\scripts\build_features.py                                    # build features & schema
 
-$env:TARGET_BASE_PD="0.08"  # (PD: 0.05 - dành cho các danh mục ít rủi ro hơn || PD: 0.10 - dành cho danh mục rủi ro cao)
+$env:TARGET_BASE_PD="0.08"
 python .\train\train_lgbm.py `
   --in .\data\processed\features.parquet `
   --out .\models `

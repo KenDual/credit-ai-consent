@@ -27,13 +27,13 @@
   "default_rate_val": 0.8,
   "default_rate_test": 0.8,
   "best_iteration": 13,
-  "timestamp": "2025-09-02T06:47:59.602342Z",
+  "timestamp": "2025-09-04T08:36:03.050448Z",
   "feature_count": 62,
   "target": "default_90d",
   "id_col": "user_id",
   "dropped_illegal": [
-    "user_id",
     "pd_true",
+    "user_id",
     "default_90d"
   ],
   "target_base_pd": 0.08,

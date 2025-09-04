@@ -1,0 +1,13 @@
+table {
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 8px 10px;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+}

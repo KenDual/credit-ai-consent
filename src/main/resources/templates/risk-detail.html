@@ -1,11 +1,19 @@
 <!doctype html>
-<html th:replace="~{layout :: content}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
-<body>
-    <section class="p-4 bg-white shadow rounded">
-        <h2 class="text-lg font-semibold mb-3">Risk — Chi tiết hồ sơ</h2>
-        <pre id="detail" class="text-sm"></pre>
-    </section>
+<head th:replace="layout :: head"></head>
+
+<body class="min-h-screen bg-gray-50">
+    <nav th:replace="layout :: nav"></nav>
+
+    <main class="p-4">
+        <section class="p-4 bg-white shadow rounded">
+            <h2 class="text-lg font-semibold mb-3">Risk — Chi tiết hồ sơ</h2>
+            <pre id="detail" class="text-sm"></pre>
+        </section>
+    </main>
+
+    <script src="/js/api.js"></script>
     <script src="/js/risk-detail.js"></script>
 </body>
 

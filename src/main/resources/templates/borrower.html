@@ -1,41 +1,54 @@
 <!doctype html>
-<html th:replace="~{layout :: content}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
-<body>
-    <div class="grid gap-6">
-        <!-- Step 1: Consent -->
-        <section class="p-4 bg-white shadow rounded">
-            <h2 class="text-lg font-semibold mb-2">Bước 1 — Cấp quyền (Consent)</h2>
-            <div class="grid gap-2">
-                <input id="consentId" class="border p-2" placeholder="Consent ID (chuỗi)" />
-                <input id="applicantId" class="border p-2" placeholder="Applicant UUID" />
-                <input id="expiry" class="border p-2" placeholder="Expiry (YYYY-MM-DDTHH:mm:ss)" />
-                <input id="lastTxHash" class="border p-2" placeholder="Tx Hash" />
-                <textarea id="scopesJson" class="border p-2" placeholder='{"email":true}'></textarea>
-                <button id="btnConsent" class="px-3 py-2 bg-black text-white rounded w-fit">Tạo/Update Consent</button>
-                <button id="btnCheck" class="px-3 py-2 bg-gray-800 text-white rounded w-fit">Kiểm tra Consent</button>
-                <pre id="consentResp" class="text-sm mt-2"></pre>
-            </div>
-        </section>
+<head th:replace="layout :: head"></head>
 
-        <!-- Step 2: Application -->
-        <section class="p-4 bg-white shadow rounded">
-            <h2 class="text-lg font-semibold mb-2">Bước 2 — Tạo hồ sơ (Application)</h2>
-            <div class="grid gap-2">
-                <button id="btnCreateApp" class="px-3 py-2 bg-black text-white rounded w-fit">Tạo Application</button>
-                <div>App ID: <span id="appId" class="font-mono"></span></div>
-            </div>
-        </section>
+<body class="min-h-screen bg-gray-50">
+    <nav th:replace="layout :: nav"></nav>
 
-        <!-- Step 3: Scoring -->
-        <section class="p-4 bg-white shadow rounded">
-            <h2 class="text-lg font-semibold mb-2">Bước 3 — Chấm điểm</h2>
-            <textarea id="features" class="border p-2 w-full h-32"
-                placeholder='{"sms_count_30d":42,"aov_90d":25.3}'></textarea>
-            <button id="btnScore" class="px-3 py-2 bg-black text-white rounded w-fit">Chấm điểm</button>
-            <pre id="scoreResp" class="text-sm mt-2"></pre>
-        </section>
-    </div>
+    <main class="p-4">
+        <div class="grid gap-6">
+            <!-- Step 1: Consent -->
+            <section class="p-4 bg-white shadow rounded">
+                <h2 class="text-lg font-semibold mb-2">Bước 1 — Cấp quyền (Consent)</h2>
+                <div class="grid gap-2">
+                    <input id="consentId" class="border p-2" placeholder="Consent ID (chuỗi)" />
+                    <input id="applicantId" class="border p-2" placeholder="Applicant UUID" />
+                    <input id="expiry" class="border p-2" placeholder="Expiry (YYYY-MM-DDTHH:mm:ss)" />
+                    <input id="lastTxHash" class="border p-2" placeholder="Tx Hash" />
+                    <textarea id="scopesJson" class="border p-2" placeholder='{"email":true}'></textarea>
+                    <div class="flex gap-2">
+                        <button id="btnConsent" class="px-3 py-2 bg-black text-white rounded w-fit">Tạo/Update
+                            Consent</button>
+                        <button id="btnCheck" class="px-3 py-2 bg-gray-800 text-white rounded w-fit">Kiểm tra
+                            Consent</button>
+                    </div>
+                    <pre id="consentResp" class="text-sm mt-2"></pre>
+                </div>
+            </section>
+
+            <!-- Step 2: Application -->
+            <section class="p-4 bg-white shadow rounded">
+                <h2 class="text-lg font-semibold mb-2">Bước 2 — Tạo hồ sơ (Application)</h2>
+                <div class="grid gap-2">
+                    <button id="btnCreateApp" class="px-3 py-2 bg-black text-white rounded w-fit">Tạo
+                        Application</button>
+                    <div>App ID: <span id="appId" class="font-mono"></span></div>
+                </div>
+            </section>
+
+            <!-- Step 3: Scoring -->
+            <section class="p-4 bg-white shadow rounded">
+                <h2 class="text-lg font-semibold mb-2">Bước 3 — Chấm điểm</h2>
+                <textarea id="features" class="border p-2 w-full h-32"
+                    placeholder='{"sms_count_30d":42,"aov_90d":25.3}'></textarea>
+                <button id="btnScore" class="px-3 py-2 bg-black text-white rounded w-fit">Chấm điểm</button>
+                <pre id="scoreResp" class="text-sm mt-2"></pre>
+            </section>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
     <script src="/js/borrower.js"></script>
 </body>
 
