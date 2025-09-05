@@ -40,7 +40,6 @@ Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8001/score `
 # 4) Quay về default PD: 0.08
 Remove-Item .\models\runtime_prior.json
 
-.\.venv\Scripts\Activate
 $env:DECISION_MODE="score"
 $env:SCORE_APPROVE_MIN="700"
 $env:SCORE_REVIEW_MIN="650"

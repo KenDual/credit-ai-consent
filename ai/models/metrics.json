@@ -4,7 +4,7 @@
     "brier": 0.5220232044336122,
     "logloss": 2.1313405765411133,
     "f1@0.5": 0.4233983286908078,
-    "ks": 0.3857842394871018
+    "ks": 0.36680296834772075
   },
   "val": {
     "auc": 0.8066666666666666,
@@ -27,13 +27,13 @@
   "default_rate_val": 0.8,
   "default_rate_test": 0.8,
   "best_iteration": 13,
-  "timestamp": "2025-09-04T08:36:03.050448Z",
+  "timestamp": "2025-09-04T14:56:20.666329Z",
   "feature_count": 62,
   "target": "default_90d",
   "id_col": "user_id",
   "dropped_illegal": [
-    "pd_true",
     "user_id",
+    "pd_true",
     "default_90d"
   ],
   "target_base_pd": 0.08,

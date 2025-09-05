@@ -21,8 +21,6 @@ public class LedgerClient {
     @Value("${ledger.baseUrl:}")
     private String ledgerBaseUrl;
 
-    /** MVP: gọi GET /verify?consentId=&txHash=  (nếu service của bạn khác path thì đổi lại).
-     *  Nếu lỗi mạng/404 -> logWarning và trả false (không chặn flow — DB check vẫn là chính). */
     public boolean verifyConsentTx(String consentId, String txHash) {
         if (ledgerBaseUrl == null || ledgerBaseUrl.isBlank()) {
             log.warn("Ledger base URL missing; skip remote verify");
