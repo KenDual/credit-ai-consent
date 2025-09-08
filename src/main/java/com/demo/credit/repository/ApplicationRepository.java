@@ -8,9 +8,6 @@ import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -44,14 +41,17 @@ public class ApplicationRepository {
                 .withProcedureName("sp_ListApplications")
                 .returningResultSet("items", listMapper());
 
-        Map<String, Object> out = call.execute(Map.of(
-                "status", status,
-                "q", q,
-                "page", page,
-                "size", size
-        ));
+        Map<String, Object> in = new HashMap<>();
+                in.put("status", status);
+                in.put("q", q);
+                in.put("page", page);
+                in.put("size", size);
+
+        Map<String, Object> out = call.execute(in);
+
+        
         @SuppressWarnings("unchecked")
-        List<ApplicationListItem> items = (List<ApplicationListItem>) out.get("items"); // key=alias from returningResultSet
+        List<ApplicationListItem> items = (List<ApplicationListItem>) out.get("items");
         if (items == null) {
             items = (List<ApplicationListItem>) out.getOrDefault("#result-set-1", List.of());
         }
@@ -94,8 +94,6 @@ public class ApplicationRepository {
                 rs.getTimestamp("created_at").toLocalDateTime(),
                 UUID.fromString(rs.getString("applicant_id")),
                 rs.getString("consent_id"),
-
-                // latest score (join TOP 1 DESC)
                 (UUID) Optional.ofNullable(rs.getString("score_id")).map(UUID::fromString).orElse(null),
                 (Integer) rs.getObject("score"),
                 rs.getBigDecimal("pd") == null ? null : rs.getBigDecimal("pd").doubleValue(),
@@ -105,8 +103,6 @@ public class ApplicationRepository {
                 rs.getString("feature_schema_version"),
                 rs.getString("tx_hash"),
                 rs.getTimestamp("scored_at") == null ? null : rs.getTimestamp("scored_at").toLocalDateTime(),
-
-                // consent snapshot
                 rs.getString("consent_status"),
                 rs.getTimestamp("consent_expiry") == null ? null : rs.getTimestamp("consent_expiry").toLocalDateTime(),
                 rs.getString("last_tx_hash")

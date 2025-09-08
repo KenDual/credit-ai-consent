@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
     public Map<String, Object> handleSql(DataAccessException ex, HttpServletRequest req) {
         return Map.of(
                 "timestamp", Instant.now(),
-                "status", 500,
+                "status", 503,
                 "error", "Database Error",
                 "message", ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage(),
                 "path", req.getRequestURI()
