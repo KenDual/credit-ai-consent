@@ -9,6 +9,11 @@
     <main class="p-4">
         <section class="p-4 bg-white shadow rounded">
             <h2 class="text-lg font-semibold mb-3">Risk — Danh sách hồ sơ</h2>
+            <div id="dbError"
+                style="display:none;margin:10px 0;padding:10px;border:1px solid #f5c2c7;background:#f8d7da;color:#842029;border-radius:8px;">
+                Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.
+            </div>
+
             <div class="flex gap-2 mb-3">
                 <select id="status" class="border p-2">
                     <option value="">(All)</option>

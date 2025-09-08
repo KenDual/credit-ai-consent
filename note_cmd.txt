@@ -12,7 +12,7 @@ npm start
 npm run demo
 
 AI:
-.\.venv\Scripts\Activate
+
 
 pip install -r requirements.txt                                       # if reclone project
 py -3 -m venv .venv                                                   # hoặc: python -m venv .venv
