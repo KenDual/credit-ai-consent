@@ -1,19 +1,58 @@
-py -3.13 -m venv .venv
+Environment installation:
+    py -3.13 -m venv .venv
 
-# Nếu bị chặn script, chạy 1 lần:
-# Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-.\.venv\Scripts\Activate.ps1
+    # Nếu bị chặn script, chạy 1 lần:
+    # Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+    .\.venv\Scripts\Activate.ps1
 
-python -m pip install --upgrade pip setuptools wheel
-pip install fastapi uvicorn[standard] pydantic==2.* numpy pandas scikit-learn lightgbm shap faiss-cpu sentence-transformers joblib
+    python -m pip install --upgrade pip setuptools wheel
+    pip install fastapi uvicorn[standard] pydantic==2.* numpy pandas scikit-learn lightgbm shap faiss-cpu sentence-transformers joblib
 
-consent-ledger:
-npm start
-npm run demo
+BLOCKCHAIN-LITE (consent-ledger):
+1. Restart Blockchain (regenerate Genesis block)
+Remove-Item .\data\ledger.json -Force
+
+2. Start Blockchain
+$env:INSECURE_LEDGER='1'; npm start
+
+3. # +30 ngày (epoch giây)
+$exp = [int]([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + 30*24*3600)
+# Compressed pubkey: 33 bytes = 66 hex, ví dụ bắt đầu '02'
+$pub = '02' + ('1' * 64)   # 66 hex
+# Signature: 64 bytes = 128 hex
+$sig = ('2' * 128)         # 128 hex
+$body = @{
+  scopes        = "sms,contacts,email,web,social,ecom"
+  expiry        = $exp
+  dataHash      = "demoHash"
+  subjectPubKey = $pub
+  signature     = $sig
+} | ConvertTo-Json
+$give = Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:3030/consents/give" `
+  -ContentType "application/json" `
+  -Body $body
+$give | Format-List
+
+4. Check status:
+$cid = $give.consentId
+Invoke-RestMethod "http://127.0.0.1:3030/consents/$cid/status"
+
+5. Demo on UI
+Get ConsentId: inside <$give.consentId> <f18fb2870ef3e03d200eebff2421729e7c3041b11a44fdd2b4d3cac391243eed>
+Get ApplicantId:  <CF4DB713-5789-F011-BC33-D7A835C72D03>
+  USE CreditAIConsent;
+  SELECT TOP 1 p.applicant_id FROM vault.ApplicantPII p WHERE p.email=N'alice@example.com';
+Expiry: <2030-12-31T23:59:59>
+TxHash: insid <$give.block.hash> <0d8af79c7fc37992f01b8ff90d317e9129bd71d2005816093e937f45b61bd591>
+Scopes JSON: ["sms","contacts","email","web","social","ecom"]
+
+
+
+
+
 
 AI:
-
-
 pip install -r requirements.txt                                       # if reclone project
 py -3 -m venv .venv                                                   # hoặc: python -m venv .venv
 python .\scripts\generate_synth.py --users 500 --days 90 --seed 42    #generate data (if haven't) 
@@ -45,8 +84,6 @@ $env:SCORE_APPROVE_MIN="700"
 $env:SCORE_REVIEW_MIN="650"
 uvicorn service.app:app --host 127.0.0.1 --port 8001 --reload
 
-Spring boot:
-./mvnw spring-boot:run
 
 
 

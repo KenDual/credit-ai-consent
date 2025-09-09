@@ -1,23 +1,19 @@
-// resources/static/js/risk-list.js
-
 const $ = s => document.querySelector(s);
 
 const fmt = s => {
     if (!s) return '';
-    const t = String(s).replace('Z', ''); // đề phòng nếu có 'Z'
-    return t.replace('T', ' ').slice(0, 16); // YYYY-MM-DD HH:mm
+    const t = String(s).replace('Z', '');
+    return t.replace('T', ' ').slice(0, 16);
 };
 
 const normalize = resp => (Array.isArray(resp) ? resp : (resp?.items || resp?.content || []));
 
-// --- helpers hiển thị lỗi DB ---
 const showDbError = (message) => {
     const el = $("#dbError");
     if (el) {
         el.style.display = "block";
         el.textContent = message || "Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.";
     } else {
-        // fallback nếu template chưa thêm #dbError
         alert(message || "Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.");
     }
 };
@@ -61,7 +57,6 @@ const loadApplications = async () => {
 
         const resp = await api.get(`/applications?${params}`);
 
-        // Trường hợp API vẫn trả 200 nhưng có cờ lỗi
         if (resp && (resp.error === "DB_DOWN")) {
             showDbError(resp.message || "Không thể kết nối cơ sở dữ liệu.");
             renderRows([]); // clear bảng

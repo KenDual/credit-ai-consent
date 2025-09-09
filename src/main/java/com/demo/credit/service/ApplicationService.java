@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -17,7 +16,6 @@ public class ApplicationService {
     private final ConsentRepository consentRepository;
 
     public UUID create(UUID applicantId, String consentId) {
-        // Pre-check đơn giản: consent phải ACTIVE & thuộc applicant
         var cons = consentRepository.findActive(consentId)
                 .orElseThrow(() -> new IllegalStateException("Consent not active or expired"));
         if (!cons.applicantId().equals(applicantId)) {
