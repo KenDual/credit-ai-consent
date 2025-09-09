@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -24,67 +26,60 @@ public class ScoringService {
     private final ObjectMapper objectMapper;
 
     public SavedScore score(UUID applicationId, String consentId, String txHash, Map<String, Double> features) {
-        // 1) Lấy thông tin hồ sơ để xác thực consent thuộc hồ sơ
+        
         var app = applicationRepository.detail(applicationId)
                 .orElseThrow(() -> new IllegalStateException("Application not found"));
         if (!app.consentId().equals(consentId)) {
             throw new IllegalStateException("ConsentId does not match application");
         }
 
-        // 2) Consent ACTIVE + chưa hết hạn
         var cons = consentRepository.findActive(consentId)
                 .orElseThrow(() -> new IllegalStateException("Consent not active or expired"));
 
-        // 3) Kiểm tra txHash
         if (txHash == null || txHash.isBlank()) {
             throw new IllegalStateException("txHash is required");
         }
         if (cons.lastTxHash() != null && !txHash.equalsIgnoreCase(cons.lastTxHash())) {
             throw new IllegalStateException("txHash does not match latest consent proof");
         }
-        // (Optional) xác minh thêm qua ledger service — không chặn nếu fail mạng
         ledgerClient.verifyConsentTx(consentId, txHash);
 
-        // 4) Gọi Model API để chấm điểm
         var modelResp = modelApiClient.callScore(features);
         if (modelResp == null || modelResp.getScore() == null || modelResp.getPd() == null) {
             throw new IllegalStateException("Model API returned invalid payload");
         }
 
-        // 5) Chuẩn hoá decision (fallback nếu null)
         String decision = (modelResp.getDecision() == null || modelResp.getDecision().isBlank())
                 ? fallbackDecision(modelResp.getScore())
                 : modelResp.getDecision().toUpperCase(Locale.ROOT);
 
-        // 6) top reasons -> JSON
         String topReasonsJson;
+        Object reasonsObj = modelResp.getReasons();
         try {
-            topReasonsJson = objectMapper.writeValueAsString(modelResp.getShapTopK());
+            topReasonsJson = objectMapper.writeValueAsString(reasonsObj == null ? List.of() : reasonsObj);
         } catch (Exception e) {
             topReasonsJson = "[]";
         }
 
-        // 7) Lưu score vào DB (SP tự update status ứng dụng)
         scoreRepository.saveScore(
                 applicationId,
                 consentId,
                 txHash,
-                modelResp.getModelVersion(),
-                modelResp.getFeatureSchemaVersion(),
+                modelResp.getModelVersion() != null ? modelResp.getModelVersion() : "m1",
+                modelResp.getFeatureSchemaVersion() != null ? modelResp.getFeatureSchemaVersion() : "v1",
                 modelResp.getScore(),
                 modelResp.getPd(),
                 decision,
                 topReasonsJson
         );
 
-        // 8) Trả kết quả gọn cho controller
         return new SavedScore(
                 modelResp.getScore(),
                 modelResp.getPd(),
                 decision,
-                modelResp.getModelVersion(),
-                modelResp.getFeatureSchemaVersion(),
-                modelResp.getShapTopK()
+                modelResp.getModelVersion() != null ? modelResp.getModelVersion() : "m1",
+                modelResp.getFeatureSchemaVersion() != null ? modelResp.getFeatureSchemaVersion() : "v1",
+                toReasonStrings(reasonsObj)
         );
     }
 
@@ -94,7 +89,37 @@ public class ScoringService {
         return "REJECT";
     }
 
-    // Payload trả về cho controller
+    @SuppressWarnings("unchecked")
+    private String[] toReasonStrings(Object reasons) {
+        try {
+            if (reasons == null) return new String[0];
+            if (reasons instanceof List<?> list) {
+                var out = new ArrayList<String>();
+                for (Object it : list) {
+                    if (it == null) continue;
+                    if (it instanceof String s) {
+                        out.add(s);
+                    } else if (it instanceof Map<?, ?> m) {
+                        Object feat = m.get("feature");
+                        Object impact = m.get("impact");
+                        if (feat != null && impact != null) {
+                            out.add(feat + ":" + impact);
+                        } else {
+                            out.add(objectMapper.writeValueAsString(m));
+                        }
+                    } else {
+                        out.add(String.valueOf(it));
+                    }
+                }
+                return out.toArray(new String[0]);
+            }
+            if (reasons instanceof String s) return new String[]{s};
+            return new String[0];
+        } catch (Exception e) {
+            return new String[0];
+        }
+    }
+
     public record SavedScore(
             Integer score, Double pd, String decision,
             String modelVersion, String featureSchemaVersion,

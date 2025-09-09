@@ -1,10 +1,11 @@
 package com.demo.credit.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +24,6 @@ public class ModelApiClient {
     @Value("${model.baseUrl}")
     private String modelBaseUrl;
 
-    /**
-     * Gọi FastAPI /score với payload features.
-     * Expect JSON: { "pd":0.12345, "score":720, "decision":"APPROVE",
-     *                "shapTopK":["reason1","reason2","reason3"],
-     *                "model_version":"v1", "feature_schema_version":"fs1" }
-     */
     public ScoreResult callScore(Map<String, Double> features) {
         try {
             URI uri = URI.create(modelBaseUrl + "/score");
@@ -36,23 +31,34 @@ public class ModelApiClient {
                     .post(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of("features", features));
+
             ResponseEntity<ScoreResult> resp = restTemplate.exchange(req, ScoreResult.class);
-            return resp.getBody();
+            ScoreResult body = resp.getBody();
+            if (body == null) {
+                throw new RuntimeException("Empty body from Model API");
+            }
+            return body;
         } catch (Exception ex) {
             throw new RuntimeException("Model API call failed: " + ex.getMessage(), ex);
         }
     }
 
-    // DTO nội bộ client (bạn có thể thay bằng dto.ScoreResult nếu đã tạo)
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ScoreResult {
-        private Double pd;
         private Integer score;
+
+        @JsonProperty("pd")
+        private Double pd;
+
         private String decision;
-        @JsonProperty("shapTopK")
-        private String[] shapTopK;
+
+        @JsonAlias({"reasons", "top_reasons", "shapTopK", "shap_top_k"})
+        private Object reasons;
+
         @JsonProperty("model_version")
         private String modelVersion;
+
         @JsonProperty("feature_schema_version")
         private String featureSchemaVersion;
     }
