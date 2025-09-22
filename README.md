@@ -1,201 +1,130 @@
-````md
+
+
+-----
+
 # Credit-AI-Consent (MVP)
 
-Hệ thống chấm điểm tín dụng thay thế (alternative credit) **consent-gated**: chỉ chấm điểm khi người vay đã **cấp quyền** hợp lệ. Dữ liệu phi truyền thống (SMS, danh bạ, mạng xã hội, e-commerce, web, email) được tổng hợp thành feature; mô hình ML trả về **Score (300–900)**, **PD**, **Decision** kèm **top-3 lý do (SHAP)**. Một **blockchain-lite consent ledger** giúp ghi vết **ConsentId/TxHash** để truy nguyên minh bạch.
 
----
+**Credit-AI-Consent** là hệ thống chấm điểm tín dụng thay thế dựa trên nguyên tắc **Consent-gated**, chỉ thực hiện khi người vay đã **cấp quyền** hợp lệ.
 
-## Kiến trúc ngắn gọn
+Dự án tích hợp dữ liệu phi truyền thống (SMS, danh bạ, mạng xã hội, e-commerce, web, email) để tổng hợp thành các đặc điểm (features), sau đó mô hình học máy sẽ trả về **Score (300–900)**, **Probability of Default (PD)**, **Decision** và **Top-3 lý do** (SHAP). Hệ thống sử dụng **blockchain-lite consent ledger** để ghi vết **ConsentId/TxHash**, nhằm đảm bảo tính minh bạch và khả năng truy nguyên dữ liệu.
 
-- **Consent Ledger (Node.js)**: Sổ cái nhẹ lưu các block GIVE/REVOKE, API `/health`, `/wallets/new`, `/consents/give`, …
-- **Model API (FastAPI, Python)**: `/health`, `/score` nhận `{features:{...}}` → trả `pd`, `score`, `decision`, `shapTopK`, `model_version`, `feature_schema_version`.
-- **App Backend (Spring Boot, Java)**: API quản lý hồ sơ & chấm điểm:
-  - `POST /applications`, `GET /applications`, `GET /applications/{id}`
-  - `POST /score/{appId}` (verify consent → gọi Model API → lưu `Scores`)
-  - Kèm **mini-UI** (Borrower & Risk console) ở `/` / `/risk`.
+### Tính năng chính
 
-> Mặc định: Spring `:8080`, Model API `:8001`, Ledger `:3030`.
+  - **Consent-gated scoring**: Chấm điểm tín dụng chỉ khi người vay cấp quyền hợp lệ.
+  - **Sử dụng dữ liệu phi truyền thống**: SMS, danh bạ, mạng xã hội, e-commerce, email, web.
+  - **Hệ thống học máy**: Trả về **score** (300–900), **PD**, **decision**, và **SHAP** cho top-3 lý do.
+  - **Blockchain-lite Ledger**: Đảm bảo tính minh bạch với **ConsentId** và **TxHash**.
+  - **Microservices**: Xây dựng bằng Node.js, FastAPI (Python), và Spring Boot (Java).
 
----
+-----
 
-## Yêu cầu môi trường
+## Mục lục
 
-- Node.js 18+
-- Python 3.10+
-- Java 17 (LTS) + Maven/Gradle
-- SQL Server (LocalDB/Express/2019+)
+  - [Cài đặt](https://www.google.com/search?q=%23c%C3%A0i-%C4%91%E1%BA%B7t)
+  - [Cách sử dụng](https://www.google.com/search?q=%23c%C3%A1ch-s%E1%BB%AD-d%E1%BB%A5ng)
+  - [Đóng góp](https://www.google.com/search?q=%23%C4%91%C3%B3ng-g%C3%B3p)
+  - [Tác giả và Liên hệ](https://www.google.com/search?q=%23t%C3%A1c-gi%E1%BA%A3-v%C3%A0-li%C3%AAn-h%E1%BB%87)
 
----
+-----
 
-## Thiết lập cơ sở dữ liệu
+## Cài đặt
 
-1. Mở SQL Server và chạy script trong thư mục `database.sql` (các bảng tối thiểu: `Applicants`, `Applications`, `Consents`, `RawSources`, `FeatureStore`, `Scores`; kèm stored procedures như `sp_CreateApplicant`, `sp_UpsertConsent`, `sp_CreateApplication`, `sp_SaveScore`, …).
-2. Kiểm tra kết nối DB trong `src/main/resources/application.properties` (URL, user, password).
+### Yêu cầu
 
-> DB mặc định: `jdbc:sqlserver://localhost:1433;databaseName=CreditAIConsent` (có `encrypt=true;trustServerCertificate=true`).
+Đảm bảo bạn đã cài đặt các công cụ sau trước khi bắt đầu:
 
----
+  - **Node.js** 18+
+  - **Python** 3.10+
+  - **Java** 17 (LTS) + Maven/Gradle
+  - **SQL Server** (LocalDB/Express/2019+)
 
-## Cấu hình ứng dụng
+### Hướng dẫn cài đặt và cấu hình
 
-Trong `application.properties`:
+1.  **Clone Repository**
 
-```properties
-# Endpoints nội bộ
-model.baseUrl=http://127.0.0.1:8001
-ledger.baseUrl=http://127.0.0.1:3030
+    ```bash
+    git clone https://github.com/yourusername/credit-ai-consent.git
+    cd credit-ai-consent
+    ```
 
-# Spring
-server.port=8080
+2.  **Thiết lập Consent-Ledger (Node.js)**
 
-# Cấu hình datasource (đổi user/password theo máy)
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=CreditAIConsent;encrypt=true;trustServerCertificate=true
-spring.datasource.username=sa
-spring.datasource.password=yourStrong(!)Password
-````
+    ```bash
+    cd consent-ledger
+    npm install
+    ```
 
----
+3.  **Thiết lập Model API (FastAPI)**
 
-## Cách chạy
+    ```bash
+    cd ai
+    python -m venv .venv
+    source .venv/bin/activate  # Trên Windows: .venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
 
-### 1. Chạy **Consent-Ledger** (Blockchain-lite)
+4.  **Thiết lập App Backend (Spring Boot)**
 
-```bash
-cd consent-ledger
-npm install
-# (Tùy chọn) bật chế độ demo không nghiêm ngặt chữ ký
-INSECURE_LEDGER=1 node src/server.js
-# Server sẽ lắng nghe tại http://127.0.0.1:3030
-```
+      - Sử dụng Maven hoặc Gradle để tải các thư viện cần thiết.
 
-> Kiểm tra nhanh:
+-----
 
-```bash
-curl http://127.0.0.1:3030/health
-```
+## Cách sử dụng
 
-### 2. Chạy **Model API** (FastAPI)
+Để chạy toàn bộ hệ thống, bạn cần khởi động từng thành phần microservice trong các terminal riêng biệt.
 
-```bash
-cd ai
-python -m venv .venv && source .venv/bin/activate  # hoặc .venv\Scripts\activate trên Windows
-pip install -r requirements.txt
-```
+1.  **Khởi động Consent-Ledger (Node.js)**
 
-Chạy service (ví dụ dùng `uvicorn`):
+      - Trong thư mục `consent-ledger`, chạy lệnh sau:
 
-```bash
-uvicorn service:app --host 127.0.0.1 --port 8001  # Điều chỉnh module:app theo cấu trúc mã của bạn
-```
+    <!-- end list -->
 
-> Kiểm tra nhanh:
+    ```bash
+    INSECURE_LEDGER=1 node src/server.js
+    ```
 
-```bash
-curl http://127.0.0.1:8001/health
-curl -X POST http://127.0.0.1:8001/score \
-  -H "Content-Type: application/json" \
-  -d '{"features":{"sms_30d":120,"sms_fin_ratio":0.2,"contacts_total":180,"email_txn_30d":25,"email_overdue_ratio":0.05,"social_posts_30d":30,"social_eng_approx":220,"ecom_orders_90d":8,"ecom_aov":420000,"ecom_late_ratio":0.0,"web_fintech_30d":18,"web_career_30d":10,"web_gambling_30d":0}}'
-```
+      - Server sẽ lắng nghe tại: `http://127.0.0.1:3030`
 
-### 3. Chạy **App Backend** (Spring Boot)
+2.  **Khởi động Model API (FastAPI)**
 
-**Maven**:
+      - Trong thư mục `ai`, kích hoạt môi trường ảo và chạy server:
 
-```bash
-./mvnw spring-boot:run
-# hoặc: mvn spring-boot:run
-```
+    <!-- end list -->
 
-**Gradle**:
+    ```bash
+    source .venv/bin/activate
+    uvicorn service:app --host 127.0.0.1 --port 8001  # Điều chỉnh module:app theo cấu trúc mã của bạn
+    ```
 
-```bash
-./gradlew bootRun
-```
+3.  **Khởi động App Backend (Spring Boot)**
 
-> Mở trình duyệt:
+      - Trong thư mục `app`, sử dụng Maven hoặc Gradle:
 
-* Borrower UI: `http://127.0.0.1:8080/`
-* Risk console (danh sách): `http://127.0.0.1:8080/risk`
-* Risk detail: `http://127.0.0.1:8080/risk/details`
+    **Với Maven:**
 
----
+    ```bash
+    ./mvnw spring-boot:run
+    # hoặc: mvn spring-boot:run
+    ```
 
-## API tóm tắt
+    **Với Gradle:**
 
-### **Consent-Ledger (Node.js)**
+    ```bash
+    ./gradlew bootRun
+    ```
 
-* `GET /health` → Kiểm tra trạng thái sổ cái.
-* `POST /wallets/new` → Tạo ví demo.
-* `POST /consents/give` → Ghi block GIVE, trả `consentId`, `txHash`.
-* `POST /consents/revoke` → Ghi block REVOKE (nếu có).
+### Giao diện người dùng
 
-### **Model API (FastAPI)**
+Truy cập các URL sau trên trình duyệt của bạn:
 
-* `GET /health` → Kiểm tra trạng thái API.
-* `POST /score`
+  - **Borrower UI:** `http://127.0.0.1:8080/`
+  - **Risk Console:** `http://127.0.0.1:8080/risk`
+  - **Risk Detail:** `http://127.0.0.1:8080/risk/details`
 
-  * **Body**: `{ "features": { ... } }`
-  * **Resp.**: `{ "pd", "score", "decision", "shapTopK": [...], "model_version", "feature_schema_version" }`
+-----
 
-### **App Backend (Spring Boot)**
+## Contact
 
-* `POST /applications` → Tạo hồ sơ, liên kết consent.
-* `GET /applications?status=&q=&page=&size=` → Danh sách hồ sơ (phân trang, sort `createdAt`).
-* `GET /applications/{id}` → Chi tiết hồ sơ + consent proof + điểm số mới nhất.
-* `POST /score/{appId}` → Verify consent → Gọi Model API → Lưu điểm.
-
----
-
-## Cấu trúc thư mục gợi ý
-
-```
-credit-ai-consent/
-├─ consent-ledger/              # Node.js ledger (server.js, routes, scripts)
-├─ ai/                          # FastAPI model service (service.py, requirements.txt)
-├─ app/                         # Spring Boot (Java)
-│  ├─ src/main/java/.../controller/
-│  ├─ src/main/java/.../service/
-│  ├─ src/main/java/.../repository/
-│  ├─ src/main/resources/
-│  │  ├─ application.properties
-│  │  ├─ templates/             # borrower.html, risk-list.html, risk-detail.html
-│  │  └─ static/                # css/, js/
-├─ database/                    # schema.sql, seed.sql (nếu có)
-└─ scripts/                     # run_chain.sh, run_ai.sh, run_app.sh (tuỳ chọn)
-```
-
----
-
-## Ngưỡng quyết định & minh bạch
-
-* **Decision (mặc định)**:
-
-  * `APPROVE` nếu **score ≥ 700**
-  * `REVIEW` nếu **650 ≤ score < 700**
-  * `REJECT` nếu **score < 650**
-* **Minh bạch**:
-
-  * Lưu kèm `ConsentId/TxHash` trong `Scores`.
-  * Trả về **top-3 lý do** (SHAP), `model_version`, `feature_schema_version`.
-
-
----
-
-## Roadmap ngắn (MVP)
-
-* [x] Consent-gated scoring end-to-end
-* [x] Tối thiểu 6 nguồn dữ liệu (SMS, contacts, social, e-commerce, web, email)
-* [x] Feature builder + schema + unit test cơ bản
-* [x] SHAP top-3 lý do
-* [x] UI tối giản (Borrower / Risk)
-* [x] Truy vết `ConsentId/TxHash` trong quyết định
-* [ ] Script “một chạm”: `run_chain`, `run_ai`, `run_app`, `seed`
-* [ ] Kiểm thử chấp nhận: APPROVE / REVIEW / REJECT; **revoke consent** → từ chối chấm điểm
-* [ ] Tách PII (vault) khỏi FeatureStore, mask log, HTTPS khi triển khai thật
-
----
-
-## License
-
-MIT (demo/research). Không dùng trực tiếp cho production nếu chưa đánh giá bảo mật, quyền riêng tư và tuân thủ pháp lý.
-
+  - **Tác giả:** KenDual
+  - **Email:** `maiphuhai123@gmail.com`
