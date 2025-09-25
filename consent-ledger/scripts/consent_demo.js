@@ -19,7 +19,7 @@ async function main() {
     console.log("DEMO WALLET\n", { priv, pub }, "\n");
 
     // GIVE
-    const giveMsg = { action: "GIVE", scopes: "sms,ecom,web", expiry: Math.floor(Date.now() / 1000) + 3600, dataHash: "demoHash" };
+    const giveMsg = { action: "GIVE", scopes: "sms,ecom,web,social,email,contacts", expiry: Math.floor(Date.now() / 1000) + 3600, dataHash: "demoHash" };
     const giveHash = messageHashHex(giveMsg);
     const giveSig = await signHex(priv, giveHash);
 

@@ -1,48 +1,292 @@
 <!doctype html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
-<head th:replace="layout :: head"></head>
+<head th:fragment="head">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Credit AI • Risk List</title>
 
-<body class="min-h-screen bg-gray-50">
-    <nav th:replace="layout :: nav"></nav>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bank: {
+                            50: '#ecfeff', 100: '#cffafe', 200: '#a5f3fc', 300: '#67e8f9', 400: '#22d3ee',
+                            500: '#06b6d4', 600: '#0891b2', 700: '#0e7490', 800: '#155e75', 900: '#164e63'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
-    <main class="p-4">
-        <section class="p-4 bg-white shadow rounded">
-            <h2 class="text-lg font-semibold mb-3">Risk — Danh sách hồ sơ</h2>
-            <div id="dbError"
-                style="display:none;margin:10px 0;padding:10px;border:1px solid #f5c2c7;background:#f8d7da;color:#842029;border-radius:8px;">
-                Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.
+    <!-- Font Fintech -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="static/css/styles.css" />
+</head>
+
+<body class="min-h-screen bg-slate-950 text-slate-100 [font-family:Inter,sans-serif]">
+    <!-- Decorative background -->
+    <div class="pointer-events-none fixed inset-0 -z-10">
+        <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900"></div>
+        <div
+            class="absolute inset-0 opacity-[0.08] bg-[radial-gradient(circle_at_1px_1px,#93c5fd_1px,transparent_1.2px)] [background-size:22px_22px]">
+        </div>
+        <div class="absolute -top-20 -left-20 h-72 w-72 rounded-full blur-3xl bg-cyan-600/20"></div>
+        <div class="absolute -bottom-24 -right-20 h-80 w-80 rounded-full blur-3xl bg-blue-700/20"></div>
+    </div>
+
+    <!-- NAV -->
+    <nav th:fragment="nav" class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur">
+        <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="h-9 w-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30 grid place-items-center">
+                    <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7h16M6 11h12M8 15h8" stroke="currentColor" stroke-width="1.6"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-sm uppercase tracking-widest text-cyan-300/80">Credit AI</div>
+                    <div class="text-base font-semibold">Risk Console</div>
+                </div>
             </div>
 
-            <div class="flex gap-2 mb-3">
-                <select id="status" class="border p-2">
-                    <option value="">(All)</option>
+            <div class="flex items-center gap-2 text-sm">
+                <a href="/borrower"
+                    class="px-3 py-2 rounded-md hover:bg-slate-800/70 border border-slate-800">Borrower</a>
+                <a href="/risk" class="px-3 py-2 rounded-md hover:bg-slate-800/70 border border-slate-800">Risk
+                    Console</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HEADER -->
+    <header class="mx-auto max-w-6xl px-4 pt-8">
+        <div
+            class="rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-4 md:p-6 shadow-xl shadow-black/20">
+            <div class="flex items-start gap-3">
+                <span
+                    class="inline-grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 12h4l3 7 4-14 3 7h4" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                </span>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Risk — Danh sách hồ sơ</h1>
+                    <p class="text-slate-400 mt-1">Lọc theo trạng thái, tìm kiếm, và xem chi tiết hồ sơ.</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="mx-auto max-w-6xl px-4 py-8">
+
+        <!-- Card: Filters -->
+        <section
+            class="rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-4 md:p-5 shadow-xl shadow-black/20">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <span
+                        class="inline-grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-bank-500 to-blue-600 text-white shadow-md shadow-cyan-500/30">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 7h16M6 12h12M8 17h8" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </span>
+                    Bộ lọc
+                </h2>
+                <div class="text-xs text-slate-400">Trạng thái &amp; từ khoá</div>
+            </div>
+
+            <div class="grid gap-2 md:grid-cols-[180px,1fr,7fr]">
+                <select id="status"
+                    class="border border-slate-800/80 bg-slate-950 text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    <option value="">(Result)</option>
                     <option>CREATED</option>
                     <option>SCORED</option>
                     <option>DECIDED</option>
                 </select>
-                <input id="q" class="border p-2" placeholder="Tìm kiếm" />
-                <button id="btnLoad" class="px-3 py-2 bg-black text-white rounded">Tải</button>
+
+                <button id="btnLoad"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-lg shadow-cyan-500/20">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <path
+                            d="M12 4v2m0 12v2m8-8h-2M6 12H4m13.657-6.343-1.414 1.414M7.757 16.243l-1.414 1.414m0-11.314 1.414 1.414M16.243 16.243l1.414 1.414"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    Tải
+                </button>
             </div>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left">
-                        <th>Ref</th>
-                        <th>Created</th>
-                        <th>Status</th>
-                        <th>Score</th>
-                        <th>PD</th>
-                        <th>Decision</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="rows"></tbody>
-            </table>
+        </section>
+
+        <!-- Card: Table -->
+        <section
+            class="mt-6 rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-0 shadow-xl shadow-black/20 overflow-hidden">
+            <div class="overflow-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-900/60 border-b border-slate-800/80 text-slate-300">
+                        <tr class="text-left">
+                            <th class="px-4 py-3 font-semibold">Ref</th>
+                            <th class="px-4 py-3 font-semibold">Created</th>
+                            <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3 font-semibold">Score</th>
+                            <th class="px-4 py-3 font-semibold">PD</th>
+                            <th class="px-4 py-3 font-semibold">Decision</th>
+                            <th class="px-4 py-3 font-semibold"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="rows" class="text-slate-200">
+                        <!-- JS sẽ render -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty placeholder (sẽ bị thay thế nếu có dữ liệu) -->
+            <div class="px-4 py-6 text-center text-sm text-slate-400" id="emptyHint">
+                Nhấn “Tải” để lấy dữ liệu hồ sơ…
+            </div>
         </section>
     </main>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/risk-list.js"></script>
+    <footer class="mx-auto max-w-6xl px-4 pb-10 text-center text-xs text-slate-500">
+        © <span class="tabular-nums">2025</span> Credit AI • For demo only
+    </footer>
+
+    <!-- ==================== JS: GIỮ NGUYÊN LOGIC & ENDPOINTS ==================== -->
+    <script>
+        const api = {
+            async get(path) {
+                const r = await fetch(path, { headers: { "Accept": "application/json" } });
+                if (!r.ok) throw new Error(await r.text());
+                return r.status === 204 ? null : r.json();
+            },
+            async post(path, body) {
+                const r = await fetch(path, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify(body || {})
+                });
+                if (!r.ok) throw new Error(await r.text());
+                return r.json();
+            }
+        };
+    </script>
+
+    <script>
+        const $ = s => document.querySelector(s);
+
+        const fmt = s => {
+            if (!s) return '';
+            const t = String(s).replace('Z', '');
+            return t.replace('T', ' ').slice(0, 16);
+        };
+
+        const normalize = resp => (Array.isArray(resp) ? resp : (resp?.items || resp?.content || []));
+
+        const showDbError = (message) => {
+            const el = $("#dbError");
+            if (el) {
+                el.style.display = "block";
+                el.textContent = message || "Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.";
+            } else {
+                alert(message || "Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.");
+            }
+        };
+
+        const hideDbError = () => {
+            const el = $("#dbError");
+            if (el) el.style.display = "none";
+        };
+
+        const renderRows = (items) => {
+            const empty = document.getElementById("emptyHint");
+            if (empty) empty.style.display = (items && items.length) ? "none" : "block";
+
+            if (!items || items.length === 0) {
+                $("#rows").innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Không có dữ liệu</td></tr>`;
+                return;
+            }
+            $("#rows").innerHTML = items.map(x => {
+                const id = x.id || x.applicationId;
+                return `
+            <tr class="border-t border-slate-800 hover:bg-slate-900/60 transition-colors">
+                <td class="px-4 py-3">${x.referenceNo || ""}</td>
+                <td class="px-4 py-3 tabular-nums">${fmt(x.createdAt)}</td>
+                <td class="px-4 py-3">${x.status || ""}</td>
+                <td class="px-4 py-3">${x.score ?? ""}</td>
+                <td class="px-4 py-3">${x.pd ?? ""}</td>
+                <td class="px-4 py-3">${x.decision || ""}</td>
+                <td class="px-4 py-3"><a class="text-blue-400 hover:text-cyan-300 hover:underline" href="/risk/detail?id=${id}" + encodeURIComponent(id)>Xem</a></td>
+            </tr>`;
+            }).join("");
+        };
+
+        const loadApplications = async () => {
+            const btn = $("#btnLoad");
+            try {
+                hideDbError();
+                if (btn) { btn.disabled = true; btn.dataset._txt = btn.textContent; btn.textContent = "Đang tải..."; }
+
+                const params = new URLSearchParams();
+
+                // ✅ Luôn set status (kể cả rỗng) để tránh null ở backend
+                const statusEl = $("#status");
+                const status = statusEl ? statusEl.value : "";
+                params.set("status", status);  // <-- luôn có status=
+
+                // Nếu có ô #q thì gửi rỗng thay vì bỏ qua (tránh null)
+                const qEl = $("#q");
+                const q = qEl ? qEl.value : "";
+                params.set("q", q);            // <-- luôn có q=, backend tự hiểu rỗng là không lọc
+
+                const resp = await api.get(`/applications?${params}`);
+
+                if (resp && (resp.error === "DB_DOWN")) {
+                    showDbError(resp.message || "Không thể kết nối cơ sở dữ liệu.");
+                    renderRows([]);
+                    return;
+                }
+
+                const items = normalize(resp);
+                renderRows(items);
+
+            } catch (err) {
+                console.error("Load applications error:", err);
+                const status = err?.status || err?.response?.status;
+                if (status === 503) {
+                    showDbError("Không thể kết nối cơ sở dữ liệu (503). Vui lòng thử lại sau.");
+                    renderRows([]);
+                    return;
+                }
+                const data = err?.response?.data || err?.data;
+                if (data && (data.error === "DB_DOWN")) {
+                    showDbError(data.message || "Không thể kết nối cơ sở dữ liệu.");
+                    renderRows([]);
+                    return;
+                }
+                showDbError(err?.message || "Đã xảy ra lỗi không xác định.");
+                renderRows([]);
+            } finally {
+                if (btn) { btn.disabled = false; if (btn.dataset._txt) btn.textContent = btn.dataset._txt; }
+            }
+        };
+
+        // Gán sự kiện
+        $("#btnLoad")?.addEventListener("click", loadApplications);
+
+        // Tải lần đầu
+        $("#btnLoad")?.click();
+    </script>
 </body>
 
 </html>

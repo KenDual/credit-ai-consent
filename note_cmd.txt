@@ -34,6 +34,10 @@ $give = Invoke-RestMethod -Method Post `
   -Body $body
 $give | Format-List
 
+
+node scripts/consent_demo.js
+
+
 4. Check status:
 $cid = $give.consentId
 Invoke-RestMethod "http://127.0.0.1:3030/consents/$cid/status"

@@ -27,14 +27,14 @@
   "default_rate_val": 0.8,
   "default_rate_test": 0.8,
   "best_iteration": 13,
-  "timestamp": "2025-09-09T05:40:59.949146Z",
+  "timestamp": "2025-09-25T09:39:11.271344Z",
   "feature_count": 62,
   "target": "default_90d",
   "id_col": "user_id",
   "dropped_illegal": [
     "user_id",
-    "default_90d",
-    "pd_true"
+    "pd_true",
+    "default_90d"
   ],
   "target_base_pd": 0.08,
   "val_prevalence_raw": 0.8,
