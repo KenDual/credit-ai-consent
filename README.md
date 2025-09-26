@@ -44,7 +44,7 @@ Dự án tích hợp dữ liệu phi truyền thống (SMS, danh bạ, mạng x�
 1.  **Clone Repository**
 
     ```bash
-    git clone https://github.com/yourusername/credit-ai-consent.git
+    git clone https://github.com/KenDual/credit-ai-consent.git
     cd credit-ai-consent
     ```
 
@@ -60,7 +60,7 @@ Dự án tích hợp dữ liệu phi truyền thống (SMS, danh bạ, mạng x�
     ```bash
     cd ai
     python -m venv .venv
-    source .venv/bin/activate  # Trên Windows: .venv\Scripts\activate
+    source ./.venv/bin/activate  # Trên Windows: .venv\Scripts\activate
     pip install -r requirements.txt
     ```
 
