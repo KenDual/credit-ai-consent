@@ -142,10 +142,9 @@
     </main>
 
     <footer class="mx-auto max-w-6xl px-4 pb-10 text-center text-xs text-slate-500">
-        © <span class="tabular-nums">2025</span> Credit AI • For demo only
+        © <span class="tabular-nums">2025</span> Credit AI
     </footer>
 
-    <!-- ==================== JS: giữ nguyên logic/params backend ==================== -->
     <script>
         const api = {
             async get(path) {
@@ -166,27 +165,36 @@
     </script>
 
     <script>
-        // risk-detail.js (GIỮ NGUYÊN)
         const $ = s => document.querySelector(s);
+
         (async () => {
-            const id = new URLSearchParams(location.search).get("id");
+            const idRaw = new URLSearchParams(location.search).get("id");
+            const id = (idRaw && idRaw !== "undefined" && idRaw !== "null") ? idRaw : null;
+
             if (!id) {
-                $("#detail").textContent = "Thiếu tham số id";
+                $("#detail").textContent = "Thiếu hoặc id không hợp lệ.";
                 return;
             }
-            const data = await api.get(`/applications/${id}`);
-            $("#detail").textContent = JSON.stringify(data, null, 2);
+
+            try {
+                const data = await api.get(`/applications/${encodeURIComponent(id)}`);
+                $("#detail").textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                let msg = e?.message || String(e);
+                try {
+                    const j = JSON.parse(msg);
+                    msg = j?.message || j?.error || msg;
+                } catch { /* bỏ qua nếu không phải JSON */ }
+                $("#detail").textContent = `Không tải được hồ sơ (${id}). ${msg}`;
+            }
         })();
     </script>
 
-    <!-- UI extras: không thay đổi endpoints/params -->
     <script>
-        // Hiển thị appId trên header (không đụng backend)
         const q = new URLSearchParams(location.search);
         const appIdHdrEl = document.getElementById("appIdHdr");
         if (appIdHdrEl) appIdHdrEl.textContent = q.get("id") || "—";
 
-        // Copy JSON nhanh
         const copyBtn = document.getElementById("btnCopy");
         copyBtn?.addEventListener("click", async () => {
             const content = document.getElementById("detail")?.textContent || "";
@@ -198,9 +206,10 @@
                     copyBtn.classList.remove("ring-2", "ring-cyan-500");
                     copyBtn.innerHTML = '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M8 7h8a2 2 0 0 1 2 2v8m-6 0H7a2 2 0 0 1-2-2V7m6 12 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Copy JSON';
                 }, 1200);
-            } catch { }
+            } catch { /* ignore */ }
         });
     </script>
+
 </body>
 
 </html>

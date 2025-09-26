@@ -16,117 +16,118 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ApplicationRepository {
 
-    private final DataSource dataSource;
+        private final DataSource dataSource;
 
-    public UUID create(UUID applicantId, String consentId) {
-        SimpleJdbcCall call = new SimpleJdbcCall(dataSource)
-                .withSchemaName("core")
-                .withProcedureName("sp_CreateApplication")
-                .declareParameters(
-                        new SqlParameter("applicant_id", Types.VARCHAR),
-                        new SqlParameter("consent_id", Types.CHAR),
-                        new SqlOutParameter("application_id", Types.VARCHAR)
-                );
+        public UUID create(UUID applicantId, String consentId) {
+                SimpleJdbcCall call = new SimpleJdbcCall(dataSource)
+                                .withSchemaName("core")
+                                .withProcedureName("sp_CreateApplication")
+                                .declareParameters(
+                                                new SqlParameter("applicant_id", Types.VARCHAR),
+                                                new SqlParameter("consent_id", Types.CHAR),
+                                                new SqlOutParameter("application_id", Types.VARCHAR));
 
-        Map<String, Object> out = call.execute(Map.of(
-                "applicant_id", applicantId.toString(),
-                "consent_id", consentId
-        ));
-        return UUID.fromString(String.valueOf(out.get("application_id")));
-    }
+                Map<String, Object> out = call.execute(Map.of(
+                                "applicant_id", applicantId.toString(),
+                                "consent_id", consentId));
+                return UUID.fromString(String.valueOf(out.get("application_id")));
+        }
 
-    public List<ApplicationListItem> list(String status, String q, int page, int size) {
-        SimpleJdbcCall call = new SimpleJdbcCall(dataSource)
-                .withSchemaName("core")
-                .withProcedureName("sp_ListApplications")
-                .returningResultSet("items", listMapper());
+        public List<ApplicationListItem> list(String status, String q, int page, int size) {
+                SimpleJdbcCall call = new SimpleJdbcCall(dataSource)
+                                .withSchemaName("core")
+                                .withProcedureName("sp_ListApplications")
+                                .returningResultSet("items", listMapper());
 
-        Map<String, Object> in = new HashMap<>();
+                Map<String, Object> in = new HashMap<>();
                 in.put("status", status);
                 in.put("q", q);
                 in.put("page", page);
                 in.put("size", size);
 
-        Map<String, Object> out = call.execute(in);
+                Map<String, Object> out = call.execute(in);
 
-        
-        @SuppressWarnings("unchecked")
-        List<ApplicationListItem> items = (List<ApplicationListItem>) out.get("items");
-        if (items == null) {
-            items = (List<ApplicationListItem>) out.getOrDefault("#result-set-1", List.of());
+                @SuppressWarnings("unchecked")
+                List<ApplicationListItem> items = (List<ApplicationListItem>) out.get("items");
+                if (items == null) {
+                        items = (List<ApplicationListItem>) out.getOrDefault("#result-set-1", List.of());
+                }
+                return items;
         }
-        return items;
-    }
 
-    public Optional<ApplicationDetail> detail(UUID applicationId) {
-        SimpleJdbcCall call = new SimpleJdbcCall(dataSource)
-                .withSchemaName("core")
-                .withProcedureName("sp_GetApplicationDetail")
-                .returningResultSet("row", detailMapper());
+        public Optional<ApplicationDetail> detail(UUID applicationId) {
+                SimpleJdbcCall call = new SimpleJdbcCall(dataSource)
+                                .withSchemaName("core")
+                                .withProcedureName("sp_GetApplicationDetail")
+                                .declareParameters(
+                                                new SqlParameter("application_id", Types.VARCHAR))
+                                .returningResultSet("row", detailMapper());
 
-        Map<String, Object> out = call.execute(Map.of("application_id", applicationId.toString()));
-        @SuppressWarnings("unchecked")
-        List<ApplicationDetail> rows = (List<ApplicationDetail>) out.getOrDefault("row",
-                (List<?>) out.getOrDefault("#result-set-1", List.of()));
-        return rows.stream().findFirst();
-    }
+                Map<String, Object> out = call.execute(Map.of("application_id", applicationId.toString()));
+                @SuppressWarnings("unchecked")
+                List<ApplicationDetail> rows = (List<ApplicationDetail>) out.getOrDefault(
+                                "row", (List<?>) out.getOrDefault("#result-set-1", List.of()));
+                return rows.stream().findFirst();
+        }
 
-    private RowMapper<ApplicationListItem> listMapper() {
-        return (rs, i) -> new ApplicationListItem(
-                UUID.fromString(rs.getString("application_id")),
-                rs.getString("reference_no"),
-                rs.getString("status"),
-                rs.getTimestamp("created_at").toLocalDateTime(),
-                UUID.fromString(rs.getString("applicant_id")),
-                rs.getString("consent_id"),
-                (Integer) rs.getObject("score"),
-                (rs.getBigDecimal("pd") == null ? null : rs.getBigDecimal("pd").doubleValue()),
-                rs.getString("decision"),
-                rs.getTimestamp("scored_at") == null ? null : rs.getTimestamp("scored_at").toLocalDateTime()
-        );
-    }
+        private RowMapper<ApplicationListItem> listMapper() {
+                return (rs, i) -> new ApplicationListItem(
+                                UUID.fromString(rs.getString("application_id")),
+                                rs.getString("reference_no"),
+                                rs.getString("status"),
+                                rs.getTimestamp("created_at").toLocalDateTime(),
+                                UUID.fromString(rs.getString("applicant_id")),
+                                rs.getString("consent_id"),
+                                (Integer) rs.getObject("score"),
+                                (rs.getBigDecimal("pd") == null ? null : rs.getBigDecimal("pd").doubleValue()),
+                                rs.getString("decision"),
+                                rs.getTimestamp("scored_at") == null ? null
+                                                : rs.getTimestamp("scored_at").toLocalDateTime());
+        }
 
-    private RowMapper<ApplicationDetail> detailMapper() {
-        return (rs, i) -> new ApplicationDetail(
-                UUID.fromString(rs.getString("id")),
-                rs.getString("reference_no"),
-                rs.getString("status"),
-                rs.getTimestamp("created_at").toLocalDateTime(),
-                UUID.fromString(rs.getString("applicant_id")),
-                rs.getString("consent_id"),
-                (UUID) Optional.ofNullable(rs.getString("score_id")).map(UUID::fromString).orElse(null),
-                (Integer) rs.getObject("score"),
-                rs.getBigDecimal("pd") == null ? null : rs.getBigDecimal("pd").doubleValue(),
-                rs.getString("decision"),
-                rs.getString("top_reasons"),
-                rs.getString("model_version"),
-                rs.getString("feature_schema_version"),
-                rs.getString("tx_hash"),
-                rs.getTimestamp("scored_at") == null ? null : rs.getTimestamp("scored_at").toLocalDateTime(),
-                rs.getString("consent_status"),
-                rs.getTimestamp("consent_expiry") == null ? null : rs.getTimestamp("consent_expiry").toLocalDateTime(),
-                rs.getString("last_tx_hash")
-        );
-    }
+        private RowMapper<ApplicationDetail> detailMapper() {
+                return (rs, i) -> new ApplicationDetail(
+                                UUID.fromString(rs.getString("id")),
+                                rs.getString("reference_no"),
+                                rs.getString("status"),
+                                rs.getTimestamp("created_at").toLocalDateTime(),
+                                UUID.fromString(rs.getString("applicant_id")),
+                                rs.getString("consent_id"),
+                                // ⬇️ score_id là số trong DB → map sang Long (không parse UUID)
+                                (rs.getObject("score_id") == null ? null : rs.getLong("score_id")),
+                                (Integer) rs.getObject("score"),
+                                rs.getBigDecimal("pd") == null ? null : rs.getBigDecimal("pd").doubleValue(),
+                                rs.getString("decision"),
+                                rs.getString("top_reasons"),
+                                rs.getString("model_version"),
+                                rs.getString("feature_schema_version"),
+                                rs.getString("tx_hash"),
+                                rs.getTimestamp("scored_at") == null ? null
+                                                : rs.getTimestamp("scored_at").toLocalDateTime(),
+                                rs.getString("consent_status"),
+                                rs.getTimestamp("consent_expiry") == null ? null
+                                                : rs.getTimestamp("consent_expiry").toLocalDateTime(),
+                                rs.getString("last_tx_hash"));
+        }
 
-    public record ApplicationListItem(
-            UUID applicationId,
-            String referenceNo,
-            String status,
-            LocalDateTime createdAt,
-            UUID applicantId,
-            String consentId,
-            Integer score,
-            Double pd,
-            String decision,
-            LocalDateTime scoredAt
-    ) {}
+        public record ApplicationListItem(
+                        UUID applicationId,
+                        String referenceNo,
+                        String status,
+                        LocalDateTime createdAt,
+                        UUID applicantId,
+                        String consentId,
+                        Integer score,
+                        Double pd,
+                        String decision,
+                        LocalDateTime scoredAt) {
+        }
 
-    public record ApplicationDetail(
-            UUID id, String referenceNo, String status, LocalDateTime createdAt,
-            UUID applicantId, String consentId,
-            UUID scoreId, Integer score, Double pd, String decision, String topReasons,
-            String modelVersion, String featureSchemaVersion, String txHash, LocalDateTime scoredAt,
-            String consentStatus, LocalDateTime consentExpiry, String consentLastTxHash
-    ) {}
+        public record ApplicationDetail(
+                        UUID id, String referenceNo, String status, LocalDateTime createdAt,
+                        UUID applicantId, String consentId,
+                        Long scoreId, Integer score, Double pd, String decision, String topReasons,
+                        String modelVersion, String featureSchemaVersion, String txHash, LocalDateTime scoredAt,
+                        String consentStatus, LocalDateTime consentExpiry, String consentLastTxHash) {
+        }
 }

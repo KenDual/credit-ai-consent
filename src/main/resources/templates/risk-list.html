@@ -159,10 +159,11 @@
     </main>
 
     <footer class="mx-auto max-w-6xl px-4 pb-10 text-center text-xs text-slate-500">
-        © <span class="tabular-nums">2025</span> Credit AI • For demo only
+        © <span class="tabular-nums">2025</span> Credit AI
     </footer>
 
     <!-- ==================== JS: GIỮ NGUYÊN LOGIC & ENDPOINTS ==================== -->
+    <!-- ============== API helper (giữ nguyên endpoints) ============== -->
     <script>
         const api = {
             async get(path) {
@@ -182,6 +183,7 @@
         };
     </script>
 
+    <!-- ============== Main logic ============== -->
     <script>
         const $ = s => document.querySelector(s);
 
@@ -208,6 +210,8 @@
             if (el) el.style.display = "none";
         };
 
+        const isValidId = (v) => v !== undefined && v !== null && String(v).trim() !== "" && v !== "undefined" && v !== "null";
+
         const renderRows = (items) => {
             const empty = document.getElementById("emptyHint");
             if (empty) empty.style.display = (items && items.length) ? "none" : "block";
@@ -216,18 +220,25 @@
                 $("#rows").innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Không có dữ liệu</td></tr>`;
                 return;
             }
+
             $("#rows").innerHTML = items.map(x => {
-                const id = x.id || x.applicationId;
+                const rawId = x.id ?? x.applicationId;
+                const id = isValidId(rawId) ? String(rawId) : null;
+
+                const linkHtml = id
+                    ? `<a class="text-blue-400 hover:text-cyan-300 hover:underline" href="/risk/detail?id=${encodeURIComponent(id)}">Xem</a>`
+                    : `<span class="text-slate-500">N/A</span>`;
+
                 return `
-            <tr class="border-t border-slate-800 hover:bg-slate-900/60 transition-colors">
-                <td class="px-4 py-3">${x.referenceNo || ""}</td>
-                <td class="px-4 py-3 tabular-nums">${fmt(x.createdAt)}</td>
-                <td class="px-4 py-3">${x.status || ""}</td>
-                <td class="px-4 py-3">${x.score ?? ""}</td>
-                <td class="px-4 py-3">${x.pd ?? ""}</td>
-                <td class="px-4 py-3">${x.decision || ""}</td>
-                <td class="px-4 py-3"><a class="text-blue-400 hover:text-cyan-300 hover:underline" href="/risk/detail?id=${id}" + encodeURIComponent(id)>Xem</a></td>
-            </tr>`;
+        <tr class="border-t border-slate-800 hover:bg-slate-900/60 transition-colors">
+          <td class="px-4 py-3">${x.referenceNo || ""}</td>
+          <td class="px-4 py-3 tabular-nums">${fmt(x.createdAt)}</td>
+          <td class="px-4 py-3">${x.status || ""}</td>
+          <td class="px-4 py-3">${x.score ?? ""}</td>
+          <td class="px-4 py-3">${x.pd ?? ""}</td>
+          <td class="px-4 py-3">${x.decision || ""}</td>
+          <td class="px-4 py-3">${linkHtml}</td>
+        </tr>`;
             }).join("");
         };
 
@@ -239,18 +250,18 @@
 
                 const params = new URLSearchParams();
 
-                // ✅ Luôn set status (kể cả rỗng) để tránh null ở backend
+                // ✅ Luôn set status & q (kể cả rỗng) để tránh null ở backend
                 const statusEl = $("#status");
                 const status = statusEl ? statusEl.value : "";
-                params.set("status", status);  // <-- luôn có status=
+                params.set("status", status);
 
-                // Nếu có ô #q thì gửi rỗng thay vì bỏ qua (tránh null)
                 const qEl = $("#q");
                 const q = qEl ? qEl.value : "";
-                params.set("q", q);            // <-- luôn có q=, backend tự hiểu rỗng là không lọc
+                params.set("q", q);
 
                 const resp = await api.get(`/applications?${params}`);
 
+                // Backend có thể chủ động trả error chuẩn hoá
                 if (resp && (resp.error === "DB_DOWN")) {
                     showDbError(resp.message || "Không thể kết nối cơ sở dữ liệu.");
                     renderRows([]);
@@ -262,6 +273,8 @@
 
             } catch (err) {
                 console.error("Load applications error:", err);
+
+                // Thử đọc status nếu có
                 const status = err?.status || err?.response?.status;
                 if (status === 503) {
                     showDbError("Không thể kết nối cơ sở dữ liệu (503). Vui lòng thử lại sau.");
@@ -274,6 +287,8 @@
                     renderRows([]);
                     return;
                 }
+
+                // Fallback
                 showDbError(err?.message || "Đã xảy ra lỗi không xác định.");
                 renderRows([]);
             } finally {
