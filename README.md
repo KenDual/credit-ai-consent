@@ -81,7 +81,7 @@ Dự án tích hợp dữ liệu phi truyền thống (SMS, danh bạ, mạng x�
     <!-- end list -->
 
     ```bash
-    INSECURE_LEDGER=1 node src/server.js
+    $env:INSECURE_LEDGER='1'; npm start
     ```
 
       - Server sẽ lắng nghe tại: `http://127.0.0.1:3030`
@@ -93,7 +93,7 @@ Dự án tích hợp dữ liệu phi truyền thống (SMS, danh bạ, mạng x�
     <!-- end list -->
 
     ```bash
-    source .venv/bin/activate
+    ./.venv/Scripts/Activate
     uvicorn service:app --host 127.0.0.1 --port 8001  # Điều chỉnh module:app theo cấu trúc mã của bạn
     ```
 
