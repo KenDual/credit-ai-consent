@@ -1,12 +1,11 @@
 <!doctype html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head th:fragment="head">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Credit AI Console • 3-Step Wizard</title>
 
-    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,7 +24,6 @@
 </head>
 
 <body class="min-h-screen bg-slate-950 text-slate-100 [font-family:Inter,sans-serif]">
-    <!-- BG -->
     <div class="pointer-events-none fixed inset-0 -z-10">
         <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900"></div>
         <div
@@ -35,7 +33,6 @@
         <div class="absolute -bottom-24 -right-20 h-80 w-80 rounded-full blur-3xl bg-blue-700/20"></div>
     </div>
 
-    <!-- NAV -->
     <nav th:fragment="nav" class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur">
         <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -61,15 +58,13 @@
         </div>
     </nav>
 
-    <!-- HEADER -->
     <header class="mx-auto max-w-6xl px-4 pt-8">
         <div
             class="rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-4 md:p-6 shadow-xl shadow-black/20">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Quy trình 3 bước: Consent → Application →
-                        Scoring</h1>
-                    <p class="text-slate-400 mt-1">Giao diện wizard gọn gàng cho ngân hàng số.</p>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">3 Step Process: Consent → Application → Scoring</h1>
+                    <p class="text-slate-400 mt-1">Clean wizard UI for digital banking</p>
                 </div>
                 <ol id="stepper" class="flex items-center gap-3 text-xs">
                     <li class="flex items-center gap-2" data-step="1">
@@ -94,7 +89,6 @@
         </div>
     </header>
 
-    <!-- MAIN -->
     <main class="mx-auto max-w-6xl px-4 py-8">
         <div class="grid gap-6 lg:grid-cols-12">
             <aside class="lg:col-span-4 space-y-6">
@@ -106,21 +100,19 @@
                                 d="M12 3v4m0 10v4M4 12h4m8 0h4M5.64 5.64l2.83 2.83m7.06 7.06l2.83 2.83M5.64 18.36l2.83-2.83m7.06-7.06l2.83-2.83"
                                 stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
                         </svg>
-                        <h3 class="font-semibold">Luồng thao tác</h3>
+                        <h3 class="font-semibold">Work Flow</h3>
                     </div>
                     <ul class="space-y-2 text-sm text-slate-300">
-                        <li>1) Nhập thông tin và bấm <span class="text-cyan-300 font-medium">Create/Update
+                        <li>1) Enter data and click <span class="text-cyan-300 font-medium">Create/Update
                                 Consent</span>.</li>
-                        <li>2) Nhấn <span class="text-blue-300 font-medium">Next</span> để sang Application.</li>
-                        <li>3) Ở Bước 2, bấm <span class="text-blue-300 font-medium">Tạo Application</span> (chờ 3s),
-                            sau đó tới Bước 3.</li>
+                        <li>2) Click <span class="text-blue-300 font-medium">Next</span> to forward to Application.</li>
+                        <li>3) At step 2, click <span class="text-blue-300 font-medium">Create Application</span> (3s), then proceed to step 3</li>
                     </ul>
                 </div>
             </aside>
 
             <div class="lg:col-span-8 space-y-6">
 
-                <!-- STEP 1 -->
                 <section id="step1"
                     class="rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-5 shadow-xl shadow-black/20">
                     <div class="flex items-start justify-between gap-3 mb-4">
@@ -132,7 +124,7 @@
                                         stroke-linecap="round" />
                                 </svg>
                             </span>
-                            <h2 class="text-lg font-semibold">Bước 1 — Cấp quyền (Consent)</h2>
+                            <h2 class="text-lg font-semibold">Step 1 - Consent</h2>
                         </div>
                         <span class="text-[11px] uppercase tracking-wider text-slate-400">Secure • Audited</span>
                     </div>
@@ -140,7 +132,7 @@
                     <div class="grid gap-3 sm:grid-cols-2">
                         <input id="consentId"
                             class="border border-slate-800/80 bg-slate-950 text-slate-100 placeholder-slate-500 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="Consent ID (chuỗi)" />
+                            placeholder="Consent ID (string)" />
                         <input id="applicantId"
                             class="border border-slate-800/80 bg-slate-950 text-slate-100 placeholder-slate-500 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             placeholder="Applicant UUID" />
@@ -162,7 +154,7 @@
                                 <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" />
                             </svg>
-                            Tạo/Update Consent
+                            Create/Update Consent
                         </button>
                         <button id="btnCheck"
                             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-slate-800 border border-slate-700 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-600">
@@ -170,10 +162,9 @@
                                 <path d="M21 21l-4.35-4.35M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" />
                             </svg>
-                            Kiểm tra Consent
+                            Check Consent
                         </button>
 
-                        <!-- Next -->
                         <button id="btnNext"
                             class="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             Next
@@ -187,7 +178,6 @@
                         class="mt-4 text-xs leading-relaxed rounded-lg border border-slate-800/80 bg-slate-950/80 p-3 text-cyan-200 overflow-auto max-h-64"></pre>
                 </section>
 
-                <!-- STEP 2 -->
                 <section id="step2"
                     class="hidden rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-5 shadow-xl shadow-black/20">
                     <div class="flex items-center gap-2 mb-4">
@@ -198,7 +188,7 @@
                                     stroke-linecap="round" />
                             </svg>
                         </span>
-                        <h2 class="text-lg font-semibold">Bước 2 — Tạo hồ sơ (Application)</h2>
+                        <h2 class="text-lg font-semibold">Step 2 — Create Application</h2>
                     </div>
 
                     <div class="grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -208,7 +198,7 @@
                                 <path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" />
                             </svg>
-                            Tạo Application
+                            Create Application
                         </button>
                         <div class="text-sm">
                             <span class="text-slate-400">App ID:</span>
@@ -218,7 +208,6 @@
                     <p id="appHint" class="mt-3 text-xs text-slate-400 hidden"></p>
                 </section>
 
-                <!-- STEP 3 -->
                 <section id="step3"
                     class="hidden rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-5 shadow-xl shadow-black/20">
                     <div class="flex items-center gap-2 mb-4">
@@ -229,7 +218,7 @@
                                     stroke-linecap="round" />
                             </svg>
                         </span>
-                        <h2 class="text-lg font-semibold">Bước 3 — Chấm điểm</h2>
+                        <h2 class="text-lg font-semibold">Step 3 - Scoring</h2>
                     </div>
 
                     <div class="mb-3 text-sm">
@@ -249,7 +238,7 @@
                                 <path d="M5 12l4 4L19 7" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" />
                             </svg>
-                            Chấm điểm
+                            Score
                         </button>
                     </div>
 
@@ -329,8 +318,6 @@
 
         $("#btnNext").onclick = () => showStep(2);
 
-        // Step 2 (tạo application + hiển thị App ID, sau đó nhảy Step 3)
-        // Step 2: gọi API ngay, hiển thị App ID ngay; chờ 3s rồi sang Step 3
         $("#btnCreateApp").onclick = async () => {
             const btn = $("#btnCreateApp");
             const hint = $("#appHint");
@@ -341,21 +328,17 @@
             hint.textContent = "Đang tạo Application…";
 
             try {
-                // GỌI API NGAY, KHÔNG COUNTDOWN
                 const res = await api.post("/applications", {
                     applicantId: $("#applicantId").value.trim(),
                     consentId: $("#consentId").value.trim()
                 });
 
-                // Hiển thị App ID ngay ở Bước 2 và đồng bộ sang Bước 3
                 $("#appId").textContent = res.id || "";
                 const step3IdEl = $("#appIdStep3");
                 if (step3IdEl) step3IdEl.textContent = res.id || "";
 
-                // Thông báo chờ 3 giây rồi chuyển bước
                 hint.textContent = "Tạo Application thành công. Sẽ chuyển sang Bước 3 sau 3 giây…";
 
-                // CHỈ CHỜ 3s TRƯỚC KHI CHUYỂN, KHÔNG CHỜ TRƯỚC KHI GỌI API
                 setTimeout(() => {
                     showStep(3);
                 }, 3000);
@@ -364,14 +347,11 @@
                 hint.textContent = "Tạo Application thất bại. Vui lòng thử lại.";
                 console.error(e);
             } finally {
-                // Cho phép bấm lại nếu cần (nếu bạn muốn khoá luôn thì bỏ dòng dưới)
                 btn.disabled = false;
                 btn.innerHTML = originalHTML;
             }
         };
 
-
-        // Step 3 (score)
         $("#btnScore").onclick = async () => {
             const appId = $("#appId").textContent.trim();
             const body = {

@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Credit AI • Risk List</title>
 
-    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,7 +22,6 @@
         }
     </script>
 
-    <!-- Font Fintech -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -32,7 +30,6 @@
 </head>
 
 <body class="min-h-screen bg-slate-950 text-slate-100 [font-family:Inter,sans-serif]">
-    <!-- Decorative background -->
     <div class="pointer-events-none fixed inset-0 -z-10">
         <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900"></div>
         <div
@@ -42,7 +39,6 @@
         <div class="absolute -bottom-24 -right-20 h-80 w-80 rounded-full blur-3xl bg-blue-700/20"></div>
     </div>
 
-    <!-- NAV -->
     <nav th:fragment="nav" class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-900/70 backdrop-blur">
         <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -68,7 +64,6 @@
         </div>
     </nav>
 
-    <!-- HEADER -->
     <header class="mx-auto max-w-6xl px-4 pt-8">
         <div
             class="rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-4 md:p-6 shadow-xl shadow-black/20">
@@ -81,17 +76,15 @@
                     </svg>
                 </span>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Risk — Danh sách hồ sơ</h1>
-                    <p class="text-slate-400 mt-1">Lọc theo trạng thái, tìm kiếm, và xem chi tiết hồ sơ.</p>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">Risk — Application list</h1>
+                    <p class="text-slate-400 mt-1">Filter by status, search, and view application details.</p>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- MAIN -->
     <main class="mx-auto max-w-6xl px-4 py-8">
 
-        <!-- Card: Filters -->
         <section
             class="rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-4 md:p-5 shadow-xl shadow-black/20">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
@@ -103,9 +96,9 @@
                                 stroke-linecap="round" />
                         </svg>
                     </span>
-                    Bộ lọc
+                    Filter
                 </h2>
-                <div class="text-xs text-slate-400">Trạng thái &amp; từ khoá</div>
+                <div class="text-xs text-slate-400">Status &amp; keyword</div>
             </div>
 
             <div class="grid gap-2 md:grid-cols-[180px,1fr,7fr]">
@@ -124,12 +117,11 @@
                             d="M12 4v2m0 12v2m8-8h-2M6 12H4m13.657-6.343-1.414 1.414M7.757 16.243l-1.414 1.414m0-11.314 1.414 1.414M16.243 16.243l1.414 1.414"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
-                    Tải
+                    Load
                 </button>
             </div>
         </section>
 
-        <!-- Card: Table -->
         <section
             class="mt-6 rounded-xl border border-slate-800/60 bg-slate-900/50 backdrop-blur p-0 shadow-xl shadow-black/20 overflow-hidden">
             <div class="overflow-auto">
@@ -146,14 +138,12 @@
                         </tr>
                     </thead>
                     <tbody id="rows" class="text-slate-200">
-                        <!-- JS sẽ render -->
                     </tbody>
                 </table>
             </div>
 
-            <!-- Empty placeholder (sẽ bị thay thế nếu có dữ liệu) -->
             <div class="px-4 py-6 text-center text-sm text-slate-400" id="emptyHint">
-                Nhấn “Tải” để lấy dữ liệu hồ sơ…
+                Click "Load" to fetch applications.
             </div>
         </section>
     </main>
@@ -162,8 +152,6 @@
         © <span class="tabular-nums">2025</span> Credit AI
     </footer>
 
-    <!-- ==================== JS: GIỮ NGUYÊN LOGIC & ENDPOINTS ==================== -->
-    <!-- ============== API helper (giữ nguyên endpoints) ============== -->
     <script>
         const api = {
             async get(path) {
@@ -183,7 +171,6 @@
         };
     </script>
 
-    <!-- ============== Main logic ============== -->
     <script>
         const $ = s => document.querySelector(s);
 
@@ -199,9 +186,9 @@
             const el = $("#dbError");
             if (el) {
                 el.style.display = "block";
-                el.textContent = message || "Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.";
+                el.textContent = message || "Cannot connect to database.";
             } else {
-                alert(message || "Không thể kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình hoặc trạng thái SQL Server.");
+                alert(message || "Please check your database connection.");
             }
         };
 
@@ -217,7 +204,7 @@
             if (empty) empty.style.display = (items && items.length) ? "none" : "block";
 
             if (!items || items.length === 0) {
-                $("#rows").innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Không có dữ liệu</td></tr>`;
+                $("#rows").innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">No data</td></tr>`;
                 return;
             }
 
@@ -226,7 +213,7 @@
                 const id = isValidId(rawId) ? String(rawId) : null;
 
                 const linkHtml = id
-                    ? `<a class="text-blue-400 hover:text-cyan-300 hover:underline" href="/risk/detail?id=${encodeURIComponent(id)}">Xem</a>`
+                    ? `<a class="text-blue-400 hover:text-cyan-300 hover:underline" href="/risk/detail?id=${encodeURIComponent(id)}">View</a>`
                     : `<span class="text-slate-500">N/A</span>`;
 
                 return `
@@ -246,11 +233,10 @@
             const btn = $("#btnLoad");
             try {
                 hideDbError();
-                if (btn) { btn.disabled = true; btn.dataset._txt = btn.textContent; btn.textContent = "Đang tải..."; }
+                if (btn) { btn.disabled = true; btn.dataset._txt = btn.textContent; btn.textContent = "Loading..."; }
 
                 const params = new URLSearchParams();
 
-                // ✅ Luôn set status & q (kể cả rỗng) để tránh null ở backend
                 const statusEl = $("#status");
                 const status = statusEl ? statusEl.value : "";
                 params.set("status", status);
@@ -261,9 +247,8 @@
 
                 const resp = await api.get(`/applications?${params}`);
 
-                // Backend có thể chủ động trả error chuẩn hoá
                 if (resp && (resp.error === "DB_DOWN")) {
-                    showDbError(resp.message || "Không thể kết nối cơ sở dữ liệu.");
+                    showDbError(resp.message || "Cannot connect to database.");
                     renderRows([]);
                     return;
                 }
@@ -274,22 +259,21 @@
             } catch (err) {
                 console.error("Load applications error:", err);
 
-                // Thử đọc status nếu có
                 const status = err?.status || err?.response?.status;
                 if (status === 503) {
-                    showDbError("Không thể kết nối cơ sở dữ liệu (503). Vui lòng thử lại sau.");
+                    showDbError("Cannot connect to database (503). Please try again.");
                     renderRows([]);
                     return;
                 }
                 const data = err?.response?.data || err?.data;
                 if (data && (data.error === "DB_DOWN")) {
-                    showDbError(data.message || "Không thể kết nối cơ sở dữ liệu.");
+                    showDbError(data.message || "Cannot connect to database.");
                     renderRows([]);
                     return;
                 }
 
                 // Fallback
-                showDbError(err?.message || "Đã xảy ra lỗi không xác định.");
+                showDbError(err?.message || "An unknown error occured.");
                 renderRows([]);
             } finally {
                 if (btn) { btn.disabled = false; if (btn.dataset._txt) btn.textContent = btn.dataset._txt; }
