@@ -17,14 +17,6 @@ Dự án tích hợp dữ liệu phi truyền thống (SMS, danh bạ, mạng x�
   - **Blockchain-lite Ledger**: Đảm bảo tính minh bạch với **ConsentId** và **TxHash**.
   - **Microservices**: Xây dựng bằng Node.js, FastAPI (Python), và Spring Boot (Java).
 
------
-
-## Mục lục
-
-  - [Cài đặt](https://www.google.com/search?q=%23c%C3%A0i-%C4%91%E1%BA%B7t)
-  - [Cách sử dụng](https://www.google.com/search?q=%23c%C3%A1ch-s%E1%BB%AD-d%E1%BB%A5ng)
-  - [Đóng góp](https://www.google.com/search?q=%23%C4%91%C3%B3ng-g%C3%B3p)
-  - [Tác giả và Liên hệ](https://www.google.com/search?q=%23t%C3%A1c-gi%E1%BA%A3-v%C3%A0-li%C3%AAn-h%E1%BB%87)
 
 -----
 
